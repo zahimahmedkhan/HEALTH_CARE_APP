@@ -1,11 +1,11 @@
 import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router";
-import SignUp from "./pages/Auth/SignUp";
-import SignIn from "./pages/Auth/SignIn";
+import SignUp from "./pages/auth/SignUp";
+import SignIn from "./pages/auth/SignIn";
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout"
-import ForgotPassword from "./pages/Auth/ForgotPassword";
-import ResetPassword from "./pages/Auth/ResetPassword";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import EmailVerification from "./pages/auth/EmailVerification";
 import UploadReport from "./pages/Dashboard/UploadReport";

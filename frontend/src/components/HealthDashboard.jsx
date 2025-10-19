@@ -34,26 +34,42 @@ export const HealthDashboard = () => {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat) => {
-        const Icon = stat.icon;
-        return (
-          <Card key={stat.title} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.title}
-              </CardTitle>
-              <Icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+  {stats.map((stat) => {
+    const Icon = stat.icon;
+    return (
+      <div 
+        key={stat.title} 
+        className="bg-gradient-to-br from-white to-blue-50/50 rounded-2xl p-6 shadow-lg border border-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-500 hover:scale-105 group relative overflow-hidden"
+      >
+        {/* Background decoration */}
+        <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-blue-100 rounded-full opacity-50 group-hover:opacity-70 transition-opacity duration-300"></div>
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+            {stat.title}
+          </h3>
+          <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-300">
+            <Icon className={`h-5 w-5 ${stat.color}`} />
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="mb-2">
+          <div className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-blue-600 bg-clip-text text-transparent">
+            {stat.value}
+          </div>
+          <p className="text-xs text-gray-500 font-medium mt-2">
+            {stat.description}
+          </p>
+        </div>
+
+        {/* Subtle hover effect */}
+        <div className="absolute inset-0 border-2 border-transparent bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl opacity-0 group-hover:opacity-5 transition-opacity duration-300 -z-10"></div>
+      </div>
+    );
+  })}
+</div>
   );
 };
