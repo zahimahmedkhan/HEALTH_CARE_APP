@@ -1,150 +1,295 @@
-import React from "react";
-import { Layout, Menu, Avatar, Button, Form, Input, DatePicker } from "antd";
+import React, { useState, useEffect, useCallback } from "react";
+import { Avatar, Button, Form, Input, DatePicker, message, Spin } from "antd";
 import {
   UserOutlined,
-  DashboardOutlined,
-  FileTextOutlined,
-  UploadOutlined,
-  HeartOutlined,
-  SettingOutlined,
   SaveOutlined,
   CalendarOutlined,
   PhoneOutlined,
   MailOutlined,
 } from "@ant-design/icons";
-
-// Single-file React component using Ant Design components + Tailwind CSS classes
-// File name: Profile.jsx
+import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
+import api from "../../utils/axiosSetup";
 
 export default function Profile() {
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [userData, setUserData] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const navigate = useNavigate();
 
-  const onFinish = (values) => {
-    console.log("Saved values:", values);
-    // replace with API call / state update as needed
+  const fetchUserProfile = useCallback(async (signal) => {
+    const token = localStorage.getItem("accessToken");
+    
+    if (!token) {
+      message.error("Authentication token missing. Please login again.");
+      navigate("/signin");
+      return;
+    }
+    
+    try {
+      setFetching(true);
+      const res = await api.get("/auth/user-profile", { signal });
+
+      if (res.data?.user) {
+        setUserData(res.data.user);
+        setAvatarPreview(res.data.user.avatar);
+        form.setFieldsValue({
+          fullName: res.data.user.userName,
+          email: res.data.user.email,
+          phone: res.data.user.phone || "",
+          dob: res.data.user.dob ? dayjs(res.data.user.dob) : null,
+        });
+      }
+    } catch (error) {
+      if (error.name === 'CanceledError') return;
+      
+      console.error("Profile fetch error:", error);
+      if (error.response?.status === 401) {
+        message.error("Session expired. Please login again.");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        navigate("/signin");
+      } else {
+        message.error(error.response?.data?.message || "Failed to fetch profile");
+      }
+    } finally {
+      setFetching(false);
+    }
+  }, [form, navigate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      message.error("Please login first");
+      navigate("/signin");
+      return;
+    }
+    
+    const controller = new AbortController();
+    fetchUserProfile(controller.signal);
+    return () => controller.abort();
+  }, [fetchUserProfile, navigate]);
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        message.error("Please upload an image file");
+        return;
+      }
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        message.error("File size must be less than 5MB");
+        return;
+      }
+      
+      setAvatarFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  return (
-   <div className="max-w-4xl mx-auto p-6">
-  <div className="bg-gradient-to-br from-white to-blue-50/50 rounded-3xl shadow-2xl border border-white/80 backdrop-blur-sm overflow-hidden">
-    {/* Header Section */}
-    <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8">
-      <h2 className="text-3xl font-bold text-white mb-3">Personal Information</h2>
-      <p className="text-blue-100 text-lg">
-        Manage your account details and preferences
-      </p>
-    </div>
+  const onFinish = async (values) => {
+    try {
+      setLoading(true);
+      
+      const formData = new FormData();
+      formData.append("userName", values.fullName);
+      formData.append("phone", values.phone || "");
+      formData.append("dob", values.dob ? values.dob.toISOString() : "");
+      
+      if (avatarFile) {
+        formData.append("avatar", avatarFile);
+      }
 
-    <div className="p-8">
-      {/* Avatar Section */}
-      <div className="flex items-center gap-8 mb-12 p-6 bg-white rounded-2xl shadow-lg border border-gray-100">
-        <div className="relative">
-          <Avatar
-            size={80}
-            icon={<UserOutlined />}
-            className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-xl border-4 border-white"
-          />
-          <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white flex items-center justify-center">
-            <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+      // Use api instance with proper headers for multipart form data
+      const res = await api.put("/auth/update-profile", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (res.data?.status === 200) {
+        message.success(res.data?.message || "Profile updated successfully");
+        setAvatarFile(null);
+        await fetchUserProfile();
+      } else {
+        message.error(res.data?.message || "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Profile update error:", error);
+      message.error(error.response?.data?.message || "Failed to update profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (fetching) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen px-3 py-4 sm:p-6" style={{ backgroundColor: "#F7F9FC" }}>
+      <div className="max-w-4xl mx-auto">
+        <div className="rounded-3xl shadow-2xl border border-white/80 backdrop-blur-sm overflow-hidden" style={{ backgroundColor: "white" }}>
+          {/* Header Section */}
+          <div className="p-5 sm:p-8" style={{ backgroundImage: "linear-gradient(135deg, #0F4C81 0%, #2EC4B6 100%)" }}>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 sm:mb-3">Personal Information</h2>
+            <p className="text-white/80 text-base sm:text-lg">
+              Manage your account details and preferences
+            </p>
           </div>
-        </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Profile Picture</h3>
-          <p className="text-gray-500 text-sm mb-4">Update your avatar and profile image</p>
-          <div className="flex gap-4">
-            <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-              Change Avatar
-            </button>
-            <button className="border-2 border-gray-300 text-gray-600 hover:border-red-400 hover:text-red-500 font-semibold py-3 px-6 rounded-xl transition-all duration-300">
-              Remove
-            </button>
+
+          <div className="p-4 sm:p-8">
+          {/* Avatar Section */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 mb-8 sm:mb-12 p-4 sm:p-6 bg-white rounded-2xl shadow-lg border" style={{ borderColor: "#2EC4B6", backgroundColor: "#F7F9FC" }}>
+            <div className="relative">
+              <Avatar
+                size={100}
+                src={avatarPreview}
+                icon={!avatarPreview && <UserOutlined />}
+                className="text-white shadow-xl border-4 border-white"
+                style={{ backgroundColor: "#0F4C81" }}
+              />
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-500 rounded-full border-4 border-white flex items-center justify-center">
+                <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-2" style={{ color: "#1F2933" }}>Profile Picture</h3>
+              <p className="text-sm mb-4" style={{ color: "#1F2933" }}>Update your avatar and profile image</p>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <label className="text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer text-center" style={{ backgroundImage: "linear-gradient(135deg, #0F4C81, #2EC4B6)" }}>
+                  Change Avatar
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                </label>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setAvatarFile(null);
+                    setAvatarPreview(userData?.avatar || null);
+                  }}
+                  className="border-2 font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-md text-center"
+                  style={{ borderColor: "#0F4C81", color: "#0F4C81", backgroundColor: "white" }}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Section */}
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            className="space-y-8"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Form.Item
+                name="fullName"
+                label={<span className="font-semibold text-lg" style={{ color: "#1F2933" }}>Full Name</span>}
+                rules={[{ required: true, message: "Please enter your full name" }]}
+              >
+                <Input 
+                  placeholder="Enter your full name" 
+                  size="large"
+                  className="h-14 rounded-xl border-2 transition-colors duration-300 shadow-sm"
+                  style={{ borderColor: "#2EC4B6", color: "#1F2933" }}
+                  prefix={<UserOutlined style={{ color: "#0F4C81" }} />}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="email"
+                label={<span className="font-semibold text-lg" style={{ color: "#1F2933" }}>Email Address</span>}
+                rules={[
+                  {
+                    type: "email",
+                    required: true,
+                    message: "Please enter a valid email",
+                  },
+                ]}
+              >
+                <Input 
+                  placeholder="your.email@example.com" 
+                  size="large"
+                  disabled
+                  className="h-14 rounded-xl border-2 transition-colors duration-300 shadow-sm"
+                  style={{ borderColor: "#2EC4B6", color: "#1F2933", backgroundColor: "#F7F9FC" }}
+                  prefix={<MailOutlined style={{ color: "#0F4C81" }} />}
+                />
+              </Form.Item>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Form.Item 
+                name="phone" 
+                label={<span className="font-semibold text-lg" style={{ color: "#1F2933" }}>Phone Number</span>}
+              >
+                <Input 
+                  placeholder="+1 (555) 123-4567" 
+                  size="large"
+                  className="h-14 rounded-xl border-2 transition-colors duration-300 shadow-sm"
+                  style={{ borderColor: "#2EC4B6", color: "#1F2933" }}
+                  prefix={<PhoneOutlined style={{ color: "#0F4C81" }} />}
+                />
+              </Form.Item>
+
+              <Form.Item 
+                name="dob" 
+                label={<span className="font-semibold text-lg" style={{ color: "#1F2933" }}>Date of Birth</span>}
+              >
+                <DatePicker 
+                  className="w-full h-14 rounded-xl border-2 transition-colors duration-300 shadow-sm"
+                  style={{ borderColor: "#2EC4B6", color: "#1F2933" }}
+                  size="large"
+                  suffixIcon={<CalendarOutlined style={{ color: "#0F4C81" }} />}
+                />
+              </Form.Item>
+            </div>
+
+            {/* Save Button */}
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end pt-6 gap-3 sm:gap-4" style={{ borderTopColor: "#E0E7FF", borderTopWidth: "1px" }}>
+              <Button
+                size="large"
+                style={{ color: "#0F4C81", borderColor: "#0F4C81" }}
+                className="font-semibold rounded-lg w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <button
+                type="submit"
+                className="text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-base flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                style={{ backgroundImage: "linear-gradient(135deg, #0F4C81, #2EC4B6)" }}
+                disabled={loading}
+              >
+                <SaveOutlined className="group-hover:scale-110 transition-transform duration-300" />
+                {loading ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </Form>
           </div>
         </div>
       </div>
-
-      {/* Form Section */}
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ fullName: "zahim", email: "zahimkhan@gmail.com" }}
-        onFinish={onFinish}
-        className="space-y-8"
-      >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Form.Item
-            name="fullName"
-            label={<span className="font-semibold text-gray-700 text-lg">Full Name</span>}
-            rules={[{ required: true, message: "Please enter your full name" }]}
-          >
-            <Input 
-              placeholder="Enter your full name" 
-              size="large"
-              className="h-14 rounded-xl border-2 border-gray-200 hover:border-blue-400 focus:border-blue-500 transition-colors duration-300 shadow-sm"
-              prefix={<UserOutlined className="text-gray-400" />}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="email"
-            label={<span className="font-semibold text-gray-700 text-lg">Email Address</span>}
-            rules={[
-              {
-                type: "email",
-                required: true,
-                message: "Please enter a valid email",
-              },
-            ]}
-          >
-            <Input 
-              placeholder="your.email@example.com" 
-              size="large"
-              className="h-14 rounded-xl border-2 border-gray-200 hover:border-blue-400 focus:border-blue-500 transition-colors duration-300 shadow-sm"
-              prefix={<MailOutlined className="text-gray-400" />}
-            />
-          </Form.Item>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Form.Item 
-            name="phone" 
-            label={<span className="font-semibold text-gray-700 text-lg">Phone Number</span>}
-          >
-            <Input 
-              placeholder="+1 (555) 123-4567" 
-              size="large"
-              className="h-14 rounded-xl border-2 border-gray-200 hover:border-blue-400 focus:border-blue-500 transition-colors duration-300 shadow-sm"
-              prefix={<PhoneOutlined className="text-gray-400" />}
-            />
-          </Form.Item>
-
-          <Form.Item 
-            name="dob" 
-            label={<span className="font-semibold text-gray-700 text-lg">Date of Birth</span>}
-          >
-            <DatePicker 
-              className="w-full h-14 rounded-xl border-2 border-gray-200 hover:border-blue-400 focus:border-blue-500 transition-colors duration-300 shadow-sm"
-              size="large"
-              suffixIcon={<CalendarOutlined className="text-gray-400" />}
-            />
-          </Form.Item>
-        </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end pt-6 border-t border-gray-200">
-          <button
-            type="submit"
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl text-lg flex items-center gap-3 group"
-          >
-            <SaveOutlined className="group-hover:scale-110 transition-transform duration-300" />
-            Save Changes
-            <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </button>
-        </div>
-      </Form>
     </div>
-  </div>
-</div>
   );
 }

@@ -61,6 +61,9 @@ userSchema.methods.comparePassword = async function (password) {
 }
 
 userSchema.methods.compareOtp = async function (otp) {
+    if (!this.otp) {
+        return false;
+    }
     return await bcrypt.compare(otp, this.otp)
 }
 

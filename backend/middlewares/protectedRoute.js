@@ -3,7 +3,6 @@ import "dotenv/config"
 import User from '../models/userModel.js'
 
 const protectedRoute = async (req, res, next) => {
-
     const header = req.headers["authorization"];
 
     if (!header) {
@@ -13,20 +12,18 @@ const protectedRoute = async (req, res, next) => {
     const token = header.split(" ")[1];
 
     try {
-
         const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
         const user = await User.findById(decoded.id);
 
         if (!user) {
-            return res.status(404).send({ status: "404", message: "User not found" })
+            return res.status(404).send({ status: 404, message: "User not found" })
         }
 
         req.user = user;
-
         next();
     } catch (error) {
-        console.log("Protected Middleware Error", error.message);
+        console.error("Protected Middleware Error:", error.message);
 
         if (error.message.includes("invalid signature")) {
 
@@ -34,7 +31,7 @@ const protectedRoute = async (req, res, next) => {
 
         } else if (error.message.includes("jwt expired")) {
 
-            return res.status(400).send({ status: 403, message: "Token expired" })
+            return res.status(401).send({ status: 401, message: "Token expired" })
 
         }
 
@@ -46,13 +43,13 @@ const adminRoute = async (req, res, next) => {
     try {
         const { user } = req;
 
-        if (!user.role.includes("admin")) {
-            return res.status(401).send({ status: 401, message: "Unauthorized - Admin only" })
+        if (user.role !== "admin") {
+            return res.status(403).send({ status: 403, message: "Forbidden - Admin only" })
         }
 
         next();
     } catch (error) {
-        console.log("Admin Middleware Error", error);
+        console.error("Admin Middleware Error:", error.message);
         res.status(500).send({ status: 500, message: "Internal server error", error: error.message })
     }
 }

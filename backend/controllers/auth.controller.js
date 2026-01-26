@@ -7,15 +7,22 @@ import { generateAccessToken, generateRefreshToken } from "../utils/generateToke
 import { sendResponse } from "../utils/sendResponse.js";
 import "dotenv/config"
 import { uploadFileToCloudinary } from "../utils/uploadToCloudniary.js";
+// Note: AISummery is used in aiSummery function below
 import { AISummery } from "../utils/aiSummery.js";
 
 const registerUser = async (req, res) => {
     try {
-        const { userName, email } = req.body;
+        const { userName, email, password } = req.body;
+
+        // Validate required fields
+        if (!userName || !email || !password) {
+            return res.status(400).send({
+                status: 400,
+                message: "Username, email, and password are required"
+            });
+        }
 
         const avatarPath = req.file?.path;
-
-        console.log(avatarPath);
 
 
         const user = await User.findOne({
@@ -30,68 +37,134 @@ const registerUser = async (req, res) => {
             });
         }
 
-        // const publicPath = await uploadFileToCloudinary(avatarPath);
-
-        const publicPath = avatarPath ? await uploadFileToCloudinary(avatarPath) : { secure_url: "" };
+        // Upload avatar to Cloudinary if provided
+        let avatarUrl = "";
+        if (avatarPath) {
+            try {
+                const uploadResult = await uploadFileToCloudinary(avatarPath);
+                avatarUrl = uploadResult.secure_url || "";
+            } catch (uploadError) {
+                console.warn("Avatar upload failed (continuing):", uploadError.message);
+                // Continue without avatar instead of failing
+            }
+        }
 
         // Always generates a 6-digit number (000000 - 999999)
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const hashOtp = bcrypt.hashSync(otp, 10);
+        const hashOtp = await bcrypt.hash(otp, 10);
 
         // Set expiry time (current time + 5 minutes)
         const otpExpiry = generateExpiryTime("5m");
 
-        await sendVerificationToEmail(otp, email, userName);
+        // Send verification email with better error handling
+        try {
+            await sendVerificationToEmail(otp, email, userName, req.headers.origin);
+        } catch (emailError) {
+            console.warn("Failed to send verification email:", emailError.message);
+            // Continue even if email fails - user can still register
+        }
 
-        await User.create({ ...req.body, otp: hashOtp, otpExpiry, avatar: publicPath.secure_url });
+        // Create user with all provided data
+        await User.create({ 
+            userName, 
+            email, 
+            password,
+            otp: hashOtp, 
+            otpExpiry, 
+            avatar: avatarUrl
+        });
 
-        res.status(201).send({ status: 201, message: "Register successfully" })
+        res.status(201).send({ 
+            status: 201, 
+            message: "Registration successful. Please check your email to verify your account." 
+        });
+
     } catch (error) {
-        console.log("Register Error", error);
-        res.status(500).send({ status: 500, message: "Internal Server Error", error: error.message })
+        console.error("❌ Registration Error:", error.message);
+        console.error("Error Details:", error);
+        
+        // Check if it's a MongoDB duplicate key error
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern)[0];
+            return res.status(409).send({
+                status: 409,
+                message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+            });
+        }
+
+        res.status(500).send({ 
+            status: 500, 
+            message: "Registration failed: " + error.message
+        });
     }
 }
 
 const verifyEmail = async (req, res) => {
   try {
-    const { otp, email } = req.query; // ✅ No change, correct extraction
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).send({ status: 400, success: false, message: "Verification token is required" });
+    }
+
+    const jwtSecret =
+      process.env.JWT_EMAIL_SECRET ||
+      process.env.JWT_SECRET ||
+      process.env.JWT_ACCESS_SECRET;
+
+    if (!jwtSecret) {
+      return res.status(500).send({
+        status: 500,
+        success: false,
+        message:
+          "Server misconfigured: missing JWT secret for email verification. Set JWT_EMAIL_SECRET (recommended) or JWT_SECRET (legacy) or JWT_ACCESS_SECRET.",
+      });
+    }
+
+    // Verify JWT token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, jwtSecret);
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        return res.status(400).send({ status: 400, success: false, message: "Verification token has expired. Please sign up again." });
+      }
+      return res.status(400).send({ status: 400, success: false, message: "Invalid verification token" });
+    }
+
+    const { email, otp } = decoded;
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      // ✅ Added clear response format
-      return res.status(404).send({ status: 404, message: "User not found" });
+      return res.status(404).send({ status: 404, success: false, message: "User not found" });
     }
 
     if (user.isVerified) {
-      // ✅ Added early return for already verified user
-      return res.status(200).send({ status: 200, message: "Email already verified" });
+      return res.status(200).send({ status: 200, success: true, message: "Email already verified" });
     }
 
-    // ✅ Fixed OTP comparison
-    // Your original code was fine, just made it clearer
-    const isValidOtp = bcrypt.compareSync(otp, user.otp);
+    // Verify OTP
+    const isValidOtp = await bcrypt.compare(otp, user.otp);
     if (!isValidOtp) {
-      return res.status(400).send({ status: 400, message: "Invalid OTP" });
+      return res.status(400).send({ status: 400, success: false, message: "Invalid verification token" });
     }
 
-    // ✅ Added proper OTP expiry check
+    // Check OTP expiry
     if (user.otpExpiry < new Date()) {
-      return res.status(400).send({ status: 400, message: "OTP expired" });
+      return res.status(400).send({ status: 400, success: false, message: "Verification token has expired" });
     }
 
-    // ✅ Mark user as verified and clear OTP fields
+    // Mark user as verified
     user.isVerified = true;
-    user.otp = null;           // ⚠️ Changed from undefined to null (more explicit)
-    user.otpExpiry = null;     // ⚠️ Changed from undefined to null
+    user.otp = null;
+    user.otpExpiry = null;
     await user.save();
 
-    // ✅ Send success response
-    return res.status(200).send({ status: 200, message: "Email verified successfully" });
+    return res.status(200).send({ status: 200, success: true, message: "Email verified successfully" });
   } catch (error) {
-    // ✅ Added proper logging
-    console.error("Verify Email Error:", error);
-    return res.status(500).send({ status: 500, message: "Internal server error" });
+    console.error("❌ Verify Email Error:", error);
+    return res.status(500).send({ status: 500, success: false, message: "Internal server error" });
   }
 };
 
@@ -185,9 +258,11 @@ const userNewPassword = async (req, res) => {
             return
         }
 
+        // IMPORTANT:
+        // `userModel.js` already hashes `password` in a pre("save") hook.
+        // If we hash here too, it becomes double-hashed and login will always fail.
         user.password = newPassword;
-
-        await user.save();
+        await user.save({ validateBeforeSave: false });
 
         sendResponse(res, 200, "Password Updated Successfully")
     } catch (error) {
@@ -212,7 +287,7 @@ const forgetPassword = async (req, res) => {
 
         // Always generates a 6-digit number (000000 - 999999)
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const hashOtp = bcrypt.hashSync(otp, 10);
+        const hashOtp = await bcrypt.hash(otp, 10);
 
         // Set expiry time (current time + 5 minutes)
         const otpExpiry = generateExpiryTime("5m");
@@ -254,7 +329,7 @@ const verifyOtp = async (req, res) => {
             return sendResponse(res, 401, "Invalid OTP")
         }
 
-        if (user.otpExpiry < Date.now()) {
+        if (user.otpExpiry < new Date()) {
             return sendResponse(res, 401, "OTP Expired")
         }
 
@@ -272,8 +347,7 @@ const verifyOtp = async (req, res) => {
 
 const userProfile = async (req, res) => {
     try {
-
-        const user = await User.findOne({ _id: req.user.id });
+        const user = await User.findOne({ _id: req.user._id });
 
         if (!user) {
             return sendResponse(res, 404, "User not found");
@@ -281,23 +355,80 @@ const userProfile = async (req, res) => {
 
         sendResponse(res, 200, "User profile successfully", { user });
     } catch (error) {
-        console.log("User Profile", error);
+        console.error("❌ User Profile Error:", error);
         sendResponse(res, 500, "Internal server error", { error: error.message })
+    }
+}
+
+const updateUserProfile = async (req, res) => {
+    try {
+        const { userName, phone, dob } = req.body;
+        const userId = req.user?._id;
+        const avatarPath = req.file?.path;
+
+        if (!userId) {
+            return sendResponse(res, 401, "Unauthorized - User ID not found");
+        }
+
+        const user = await User.findOne({ _id: userId });
+
+        if (!user) {
+            return sendResponse(res, 404, "User not found");
+        }
+
+        // Update fields if provided
+        if (userName) {
+            // Check if userName is unique (excluding current user)
+            const existingUser = await User.findOne({ userName, _id: { $ne: userId } });
+            if (existingUser) {
+                return sendResponse(res, 409, "Username already exists");
+            }
+            user.userName = userName;
+        }
+        
+        if (phone) {
+            user.phone = phone;
+        }
+        
+        if (dob) {
+            user.dob = dob;
+        }
+
+        // Upload and update avatar if provided
+        if (avatarPath) {
+            try {
+                const publicPath = await uploadFileToCloudinary(avatarPath);
+                if (publicPath?.secure_url) {
+                    user.avatar = publicPath.secure_url;
+                }
+            } catch (uploadError) {
+                return sendResponse(res, 500, "Failed to upload avatar: " + uploadError.message);
+            }
+        }
+
+        await user.save();
+        sendResponse(res, 200, "Profile updated successfully", { user });
+    } catch (error) {
+        console.error("Update Profile Error:", error.message);
+        sendResponse(res, 500, "Internal server error");
     }
 }
 
 const aiSummery = async (req, res) => {
     try {
-
         const { question } = req.body;
+
+        if (!question || question.trim().length === 0) {
+            return sendResponse(res, 400, "Question is required");
+        }
 
         const answer = await AISummery(question);
 
-        sendResponse(res, 200, "Successfully answer generated", { respone: answer })
+        sendResponse(res, 200, "Successfully answer generated", { response: answer })
     } catch (error) {
         console.log("AI summery Error", error);
         sendResponse(res, 500, "Internal server error", { error: error.message })
     }
 }
 
-export { loginUser, registerUser, refreshAccessToken, logoutUser, userNewPassword, verifyEmail, verifyOtp, forgetPassword, userProfile, aiSummery }
+export { loginUser, registerUser, refreshAccessToken, logoutUser, userNewPassword, verifyEmail, verifyOtp, forgetPassword, userProfile, updateUserProfile, aiSummery }

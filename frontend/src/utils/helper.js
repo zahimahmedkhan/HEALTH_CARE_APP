@@ -1,7 +1,6 @@
 export const generateAvatar = (username) => {    
     if(!username) return '';
-    let splitName = username.split('')
-    return (splitName[0].charAt()).toUpperCase();
+    return username[0].toUpperCase();
 }
 
 export const dateFormat = (date) => {

@@ -11,28 +11,37 @@ const port = process.env.PORT || 5000;
 const db = mongoose.connection;
 
 // For DB Connection
-db.on("Error", (error) => {
-    console.log("DB Error", error);
+db.on("error", (error) => {
+    console.log("❌ DB Error", error);
 })
 
 db.once("open", () => {
-    console.log("DB Connected");
+    console.log("✅ DB Connected");
 })
 // For DB Connection
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true, 
 }));
 
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error("❌ Global Error Handler:", err);
+    res.status(500).send({
+        status: 500,
+        message: "Internal Server Error",
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
 
 // For Routes
 app.use("/api", mainRoute);
 // For Routes
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+    console.log(`✅ Server running on port ${port}`)
 })

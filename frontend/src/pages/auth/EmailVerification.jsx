@@ -1,33 +1,60 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import verifiedImg from "./../../assets/images/verified.gif";
 import verificationFailedImg from "./../../assets/images/verification-failed.gif";
 
 const EmailVerification = () => {
   const { token } = useParams();
   const [isVerified, setIsVerified] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const verifyEmail = async () => {
-      try {
-        const { data } = await axios.get(`http://localhost:5000/api/auth/verify-email/${token}`);
-        if (data.success) {
-          setIsVerified(true);
-        } else {
-          setIsVerified(false);
-        }
-      } catch (error) {
-        console.error("Verification error:", error);
+  const verifyEmail = useCallback(async (signal) => {
+    if (!token) {
+      setErrorMessage("No verification token provided");
+      setIsVerified(false);
+      return;
+    }
+    
+    try {
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_API_URL}/auth/verify-email/${token}`,
+        { signal }
+      );
+      if (data.success || data.status === 200) {
+        setIsVerified(true);
+      } else {
         setIsVerified(false);
+        setErrorMessage(data.message || "Verification failed");
       }
-    };
-
-    verifyEmail();
+    } catch (error) {
+      if (error.name === 'CanceledError') return;
+      
+      console.error("Verification error:", error);
+      const message = error.response?.data?.message || "Verification failed. The link may have expired.";
+      setErrorMessage(message);
+      setIsVerified(false);
+    }
   }, [token]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    verifyEmail(controller.signal);
+    return () => controller.abort();
+  }, [verifyEmail]);
+
   if (isVerified === null) {
-    return <h1 className="text-center mt-10">Verifying your email...</h1>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-800 mt-4">Verifying your email...</h1>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -68,7 +95,8 @@ const EmailVerification = () => {
       </div>
       
       <h1 className="text-3xl font-bold text-gray-800 mb-3">Verification Failed</h1>
-      <p className="text-gray-500 mb-8 text-lg">We couldn't verify your email address. Please try again.</p>
+      <p className="text-gray-500 mb-2 text-lg">We couldn't verify your email address</p>
+      <p className="text-red-600 mb-8 text-sm font-medium">{errorMessage}</p>
       
       <Link 
         to="/" 

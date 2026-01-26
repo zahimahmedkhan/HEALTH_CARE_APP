@@ -1,16 +1,39 @@
-import React from "react";
-import { Form, message } from "antd";
-import InputField from "../../components/InputField";
-import PrimaryButton from "../../components/PrimaryButton";
-import { MailOutlined } from "@ant-design/icons";
-import { Link } from "react-router";
+import React, { useState } from "react";
+import { Form, message, Input, Spin } from "antd";
+import { MailOutlined, SafetyOutlined, SendOutlined, CheckCircleOutlined, LoadingOutlined } from "@ant-design/icons";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const ForgotPassword = () => {
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const navigate = useNavigate();
 
-  const onFinish = (values) => {
-    console.log("Reset link sent to:", values.email);
-    message.success("Password reset link sent to your email!");
+  const onFinish = async (values) => {
+    try {
+      setLoading(true);
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/forget-password`,
+        { email: values.email }
+      );
+
+      if (response.data?.status === 200) {
+        setEmailSent(true);
+        message.success("OTP sent to your email!");
+        // Navigate to OTP verification page after short delay
+        setTimeout(() => {
+          navigate(`/reset-password?email=${encodeURIComponent(values.email)}`);
+        }, 2000);
+      } else {
+        message.error(response.data?.message || "Failed to send reset email");
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      message.error(error.response?.data?.message || "Failed to send reset email. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -53,7 +76,7 @@ const ForgotPassword = () => {
       {/* Security Note */}
       <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
         <div className="flex items-start space-x-3">
-          <ShieldCheckOutlined className="text-orange-500 text-lg mt-0.5" />
+          <SafetyOutlined className="text-orange-500 text-lg mt-0.5" />
           <div>
             <h4 className="font-semibold text-orange-800 mb-1">Secure Process</h4>
             <p className="text-orange-700 text-sm">
@@ -67,29 +90,41 @@ const ForgotPassword = () => {
       <Form.Item className="mb-0">
         <button
           type="submit"
-          className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0 text-lg flex items-center justify-center gap-3 group relative overflow-hidden"
+          disabled={loading}
+          className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0 text-lg flex items-center justify-center gap-3 group relative overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {/* Animated background */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
           
           <span className="relative z-10 flex items-center justify-center gap-2">
-            <PaperPlaneOutlined className="group-hover:translate-x-1 transition-transform duration-300" />
-            Send Reset Link
+            {loading ? (
+              <>
+                <LoadingOutlined spin />
+                Sending...
+              </>
+            ) : (
+              <>
+                <SendOutlined className="group-hover:translate-x-1 transition-transform duration-300" />
+                Send Reset OTP
+              </>
+            )}
           </span>
         </button>
       </Form.Item>
     </Form>
 
-    {/* Success Message Placeholder */}
-    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl hidden" id="successMessage">
-      <div className="flex items-center space-x-3">
-        <CheckCircleOutlined className="text-green-500 text-xl" />
-        <div>
-          <p className="font-semibold text-green-800">Reset link sent!</p>
-          <p className="text-green-700 text-sm">Check your email for further instructions</p>
+    {/* Success Message */}
+    {emailSent && (
+      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+        <div className="flex items-center space-x-3">
+          <CheckCircleOutlined className="text-green-500 text-xl" />
+          <div>
+            <p className="font-semibold text-green-800">OTP sent!</p>
+            <p className="text-green-700 text-sm">Check your email and enter the OTP on the next page</p>
+          </div>
         </div>
       </div>
-    </div>
+    )}
 
     {/* Back to Sign In */}
     <div className="text-center mt-8 pt-6 border-t border-gray-200">
