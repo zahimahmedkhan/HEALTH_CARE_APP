@@ -18,7 +18,7 @@ const uploadFileToCloudinary = async (fileInput) => {
             publicFile = await new Promise((resolve, reject) => {
                 const uploadStream = cloudinary.uploader.upload_stream(
                     {
-                        folder: "Health_Mate_Images",
+                        folder: "HealthPro_Images",
                         transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
                     },
                     (error, result) => {
@@ -46,7 +46,7 @@ const uploadFileToCloudinary = async (fileInput) => {
             }
             
             publicFile = await cloudinary.uploader.upload(fileInput, {
-                folder: "Health_Mate_Images",
+                folder: "HealthPro_Images",
             });
             
             console.log("✅ Cloudinary upload success:", publicFile.secure_url);
@@ -81,7 +81,7 @@ const removeFileFromCloudinary = async (publicId) => {
         }
 
         const status = await cloudinary.uploader.destroy(publicId, {
-            folder: "Health_Mate_Images",
+            folder: "HealthPro_Images",
         });
 
         return status;
