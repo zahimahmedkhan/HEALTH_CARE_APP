@@ -22,7 +22,7 @@ const registerUser = async (req, res) => {
             });
         }
 
-        const avatarPath = req.file?.path;
+        const avatarBuffer = req.file?.buffer;
 
 
         const user = await User.findOne({
@@ -39,9 +39,9 @@ const registerUser = async (req, res) => {
 
         // Upload avatar to Cloudinary if provided
         let avatarUrl = "";
-        if (avatarPath) {
+        if (avatarBuffer) {
             try {
-                const uploadResult = await uploadFileToCloudinary(avatarPath);
+                const uploadResult = await uploadFileToCloudinary(avatarBuffer);
                 avatarUrl = uploadResult.secure_url || "";
             } catch (uploadError) {
                 console.warn("Avatar upload failed (continuing):", uploadError.message);
@@ -80,7 +80,7 @@ const registerUser = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ Registration Error:", error.message);
+        console.error("âŒ Registration Error:", error.message);
         console.error("Error Details:", error);
         
         // Check if it's a MongoDB duplicate key error
@@ -163,7 +163,7 @@ const verifyEmail = async (req, res) => {
 
     return res.status(200).send({ status: 200, success: true, message: "Email verified successfully" });
   } catch (error) {
-    console.error("❌ Verify Email Error:", error);
+    console.error("âŒ Verify Email Error:", error);
     return res.status(500).send({ status: 500, success: false, message: "Internal server error" });
   }
 };
@@ -177,12 +177,12 @@ const loginUser = async (req, res) => {
             $or: [{ email }, { userName }]
         }).select("+password");
 
-        // 404 — Not Found
+        // 404 â€" Not Found
         if (!user) {
             return sendResponse(res, 404, "User not found")
         }
 
-        // 403 — Forbidden (account exists but not verified)
+        // 403 â€" Forbidden (account exists but not verified)
         // if (!user.isVerified) {
         //     return sendResponse(res, 403, "Email not verified")
         // }
@@ -190,7 +190,7 @@ const loginUser = async (req, res) => {
         // Compare password (make sure to call the instance method)
         const isValidPass = await user.comparePassword(password);
 
-        // 401 — Unauthorized (wrong credentials)
+        // 401 â€" Unauthorized (wrong credentials)
         if (!isValidPass) {
             return sendResponse(res, 401, "Invalid password")
         }
@@ -202,11 +202,11 @@ const loginUser = async (req, res) => {
         user.refreshToken = refreshToken;
         await user.save();
 
-        // 200 — OK 
+        // 200 â€" OK 
         sendResponse(res, 200, "Login successful", { accessToken, refreshToken })
     } catch (error) {
         console.error("Login Error:", error);
-        // 500 — Internal Server Error
+        // 500 â€" Internal Server Error
         sendResponse(res, 500, "Internal server error", { error: error.message })
     }
 };
@@ -355,16 +355,22 @@ const userProfile = async (req, res) => {
 
         sendResponse(res, 200, "User profile successfully", { user });
     } catch (error) {
-        console.error("❌ User Profile Error:", error);
+        console.error("âŒ User Profile Error:", error);
         sendResponse(res, 500, "Internal server error", { error: error.message })
     }
 }
 
 const updateUserProfile = async (req, res) => {
     try {
+        console.log("🔄 Update Profile Called");
+        console.log("📦 Body:", req.body);
+        console.log("🖼️ File:", req.file ? "File received" : "No file");
+        
         const { userName, phone, dob } = req.body;
         const userId = req.user?._id;
-        const avatarPath = req.file?.path;
+        
+        // ⚠️ Use .path for disk storage OR .buffer for memory storage
+        const avatarData = req.file?.path || req.file?.buffer;
 
         if (!userId) {
             return sendResponse(res, 401, "Unauthorized - User ID not found");
@@ -378,7 +384,6 @@ const updateUserProfile = async (req, res) => {
 
         // Update fields if provided
         if (userName) {
-            // Check if userName is unique (excluding current user)
             const existingUser = await User.findOne({ userName, _id: { $ne: userId } });
             if (existingUser) {
                 return sendResponse(res, 409, "Username already exists");
@@ -395,13 +400,16 @@ const updateUserProfile = async (req, res) => {
         }
 
         // Upload and update avatar if provided
-        if (avatarPath) {
+        if (avatarData) {
             try {
-                const publicPath = await uploadFileToCloudinary(avatarPath);
+                console.log("📤 Starting avatar upload...");
+                const publicPath = await uploadFileToCloudinary(avatarData);
                 if (publicPath?.secure_url) {
                     user.avatar = publicPath.secure_url;
+                    console.log("✅ Avatar updated:", publicPath.secure_url);
                 }
             } catch (uploadError) {
+                console.error("❌ Avatar Upload Error:", uploadError);
                 return sendResponse(res, 500, "Failed to upload avatar: " + uploadError.message);
             }
         }
@@ -409,11 +417,10 @@ const updateUserProfile = async (req, res) => {
         await user.save();
         sendResponse(res, 200, "Profile updated successfully", { user });
     } catch (error) {
-        console.error("Update Profile Error:", error.message);
-        sendResponse(res, 500, "Internal server error");
+        console.error("❌ Update Profile Error:", error);
+        sendResponse(res, 500, "Internal server error", { error: error.message });
     }
 }
-
 const aiSummery = async (req, res) => {
     try {
         const { question } = req.body;

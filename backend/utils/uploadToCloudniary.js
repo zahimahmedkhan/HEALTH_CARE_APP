@@ -1,35 +1,81 @@
 import fs from "fs-extra";
-import cloudinary from '../config/cloudinary.js'
+import cloudinary from '../config/cloudinary.js';
+import { Readable } from 'stream';
 
-const uploadFileToCloudinary = async (localFilePath) => {
+const uploadFileToCloudinary = async (fileInput) => {
     try {
-
-        if (!localFilePath) {
-            return;
+        console.log("📤 Upload started:", typeof fileInput); // Debug log
+        
+        if (!fileInput) {
+            throw new Error("No file input provided");
         }
-        const publicFile = await cloudinary.uploader.upload(localFilePath, {
-            folder: "Health_Mate_Images",
-        });
+
+        let publicFile;
+
+        // Check if input is a Buffer (from memory storage)
+        if (Buffer.isBuffer(fileInput)) {
+            console.log("✅ Uploading buffer to Cloudinary");
+            publicFile = await new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: "Health_Mate_Images",
+                        transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
+                    },
+                    (error, result) => {
+                        if (error) {
+                            console.error("❌ Cloudinary stream error:", error);
+                            reject(error);
+                        } else {
+                            console.log("✅ Cloudinary upload success:", result.secure_url);
+                            resolve(result);
+                        }
+                    }
+                );
+
+                const readableStream = Readable.from(fileInput);
+                readableStream.pipe(uploadStream);
+            });
+        } 
+        // Check if input is a file path (string)
+        else if (typeof fileInput === 'string') {
+            console.log("✅ Uploading file from path:", fileInput);
+            
+            // Check if file exists
+            if (!fs.existsSync(fileInput)) {
+                throw new Error(`File not found: ${fileInput}`);
+            }
+            
+            publicFile = await cloudinary.uploader.upload(fileInput, {
+                folder: "Health_Mate_Images",
+            });
+            
+            console.log("✅ Cloudinary upload success:", publicFile.secure_url);
+
+            // Remove local file after upload
+            fs.removeSync(fileInput);
+        } else {
+            throw new Error(`Invalid file input type: ${typeof fileInput}`);
+        }
 
         if (!publicFile) {
-            return;
+            throw new Error('Upload failed - no result from Cloudinary');
         }
-
-        fs.removeSync(localFilePath);
 
         return publicFile;
     } catch (error) {
-        console.log(error);
-        if (localFilePath) {
-            fs.removeSync(localFilePath);
+        console.error("❌ Cloudinary Upload Error:", error.message);
+        
+        // Clean up file if it exists and upload failed
+        if (typeof fileInput === 'string' && fs.existsSync(fileInput)) {
+            fs.removeSync(fileInput);
         }
-        throw error
+        
+        throw error;
     }
 }
 
 const removeFileFromCloudinary = async (publicId) => {
     try {
-
         if (!publicId) {
             return;
         }
@@ -40,8 +86,8 @@ const removeFileFromCloudinary = async (publicId) => {
 
         return status;
     } catch (error) {
-        console.log(error);
-        throw error
+        console.error("❌ Cloudinary Delete Error:", error);
+        throw error;
     }
 }
 
