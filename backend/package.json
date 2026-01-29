@@ -2,9 +2,10 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.cjs",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "vercel-build": "echo 'Building for Vercel'"
   },
   "keywords": [],
   "author": "",
