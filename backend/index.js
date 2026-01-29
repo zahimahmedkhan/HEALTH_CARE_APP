@@ -25,7 +25,8 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL?.split(",") || "*" || [],
+    // origin: process.env.FRONTEND_URL?.split(",") || "*" || [],
+    origin:"*",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   }),
