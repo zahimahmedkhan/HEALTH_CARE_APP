@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://health-care-app-backend-bv7do6snr-zahim-ahmed-khans-projects.vercel.app/api",
+  baseURL: import.meta.env.VITE_API_URL || "https://health-care-app-psi.vercel.app",
 });
 
 // Request interceptor to add token
