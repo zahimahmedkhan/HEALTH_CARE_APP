@@ -3,12 +3,12 @@ const vitalRoute = express.Router();
 import { protectedRoute } from '../middlewares/protectedRoute.js'
 import { addVital, deleteVital, getAllVitals, getSingleVital } from '../controllers/vital.controller.js';
 
-vitalRoute.post("/add-vital", protectedRoute, addVital);
+vitalRoute.post("/", protectedRoute, addVital);
 
-vitalRoute.get("/vitals", protectedRoute, getAllVitals);
+vitalRoute.get("/", protectedRoute, getAllVitals);
 
 vitalRoute.get("/vitals/:id", protectedRoute, getSingleVital);
 
-vitalRoute.delete("/vitals/:id", protectedRoute, deleteVital);
+vitalRoute.delete("/:id", protectedRoute, deleteVital);
 
 export default vitalRoute;

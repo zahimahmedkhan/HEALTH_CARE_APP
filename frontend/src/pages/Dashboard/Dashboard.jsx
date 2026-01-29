@@ -22,12 +22,12 @@ const Dashboard = () => {
   const fetchVitals = useCallback(async (signal) => {
     try {
       setLoadingVitals(true);
-      const response = await api.get("/vital/vitals", { signal });
+      const response = await api.get("/vitals", { signal });
       if (response.data?.vitals) {
         // Get the 3 most recent vitals
         const sortedVitals = response.data.vitals
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .slice(0, 3);
+          .slice(0, 2);
         setVitals(sortedVitals);
       }
     } catch (error) {

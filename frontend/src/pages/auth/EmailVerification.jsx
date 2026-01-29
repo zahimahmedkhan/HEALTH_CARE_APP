@@ -3,6 +3,7 @@ import axios from "axios";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import verifiedImg from "./../../assets/images/verified.gif";
 import verificationFailedImg from "./../../assets/images/verification-failed.gif";
+import api from "../../utils/axiosSetup";
 
 const EmailVerification = () => {
   const { token } = useParams();

@@ -64,7 +64,7 @@ const TrackVitals = () => {
   const fetchVitals = useCallback(async (signal) => {
     try {
       setRefreshing(true);
-      const res = await api.get("/vital/vitals", { signal });
+      const res = await api.get("/vitals", { signal });
       if (res.data?.vitals) {
         setVitals(res.data.vitals);
       }
@@ -92,7 +92,7 @@ const TrackVitals = () => {
 
     try {
       setLoading(true);
-      const res = await api.post("/vital/add-vital", {
+      const res = await api.post("/vitals", {
         bloodPressure,
         heartRate,
         temperature,
@@ -120,7 +120,7 @@ const TrackVitals = () => {
 
   const handleDelete = async (id) => {
     try {
-      const res = await api.delete(`/vital/vitals/${id}`);
+      const res = await api.delete(`/vitals/${id}`);
 
       if (res.data?.status === 200) {
         message.success("Vital deleted successfully");
