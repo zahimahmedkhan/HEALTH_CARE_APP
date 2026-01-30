@@ -1,18 +1,8 @@
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 import Tesseract from "tesseract.js";
 
-// Set the worker source
-try {
-  // Try to use the worker from public folder first
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.js";
-} catch (err) {
-  console.warn("Failed to set worker from public folder:", err);
-  // Fallback to node_modules
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/legacy/build/pdf.worker.min.js",
-    import.meta.url
-  ).toString();
-}
+// Use CDN for worker - this works on all deployments
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 /**
  * Converts PDF page to image canvas
@@ -88,6 +78,7 @@ export const extractPDFText = async (file, onProgress = null) => {
             text += ocrText + "\n";
           }
         } catch (ocrErr) {
+          console.warn(`OCR failed for page ${i}:`, ocrErr);
           text += `[Unable to extract text from page ${i}]\n`;
         }
       }
