@@ -1,8 +1,9 @@
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 import Tesseract from "tesseract.js";
 
-// Use CDN with matching version 5.4.296
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.296/pdf.worker.min.mjs`;
+// Use jsdelivr CDN which has better version support
+// This will use the same version as your installed package
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.296/legacy/build/pdf.worker.min.mjs`;
 
 /**
  * Converts PDF page to image canvas
