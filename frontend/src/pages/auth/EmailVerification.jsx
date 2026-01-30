@@ -20,7 +20,7 @@ const EmailVerification = () => {
     
     try {
       const { data } = await axios.get(
-        `${import.meta.env.VITE_API_URL}/auth/verify-email/${token}`,
+        `${import.meta.env.VITE_API_URL}/api/auth/verify-email/${token}`,
         { signal }
       );
       if (data.success || data.status === 200) {
