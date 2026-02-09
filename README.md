@@ -4,7 +4,7 @@ A full-stack **Healthcare Application** built with **React (Vite) + Redux Toolki
 The project is designed with a scalable architecture to support authentication, file uploads, OCR, PDFs, email services, and modern UI components.
 
 ---
-#Live Link :[HEALTH-CARE-APP](https://health-care-app-nu-virid.vercel.app)
+Live Link :[HEALTH-CARE-APP ](https://health-care-app-nu-virid.vercel.app)
 
 
 
