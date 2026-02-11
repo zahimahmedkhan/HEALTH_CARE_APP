@@ -41,7 +41,7 @@ Brief notes:
 
 1. Clone repository
 ```bash
-git clone <repo-url>
+git clone https://github.com/zahimahmedkhan/HEALTH_CARE_APP.git
 cd HEALTH_CARE_APP
 ```
 
