@@ -1,145 +1,108 @@
 # HEALTH_CARE_APP
 
-A full-stack healthcare application template built with React (Vite) + Redux Toolkit on the frontend and Node.js + Express + MongoDB on the backend. Designed for rapid prototyping and hackathons, this project includes authentication, file uploads, OCR support, PDF handling, email services, and modern UI tooling.
+A full‑stack Healthcare application scaffold combining a React (Vite) frontend with a Node.js + Express + MongoDB backend. Designed as a scalable starter for building healthcare‑related features such as authentication, file uploads, OCR, PDF handling, and email notifications.
 
----
-Live Link :[HEALTH-CARE-APP ](https://health-care-app-nu-virid.vercel.app)
-
-
-
-## Project Snapshot
-
-- Frontend: Vite + React 18, Redux Toolkit, Tailwind CSS, Ant Design
-- Backend: Node.js, Express, MongoDB (Mongoose)
-- Features include JWT authentication, file uploads (Multer + Cloudinary), OCR (Tesseract.js), PDF handling, and email via Nodemailer.
-
----
+## Short Description
+HEALTH_CARE_APP is intended for developers and teams who need a modern, production‑ready MERN scaffold for rapid prototyping and hackathons. It includes common integrations (authentication, Cloudinary, OCR via Tesseract.js, PDF handling, and email) and a frontend built with Vite, Redux Toolkit, Tailwind CSS, and Ant Design.
 
 ## Features
-
-- Secure authentication (JWT + bcrypt)
-- Modular MVC-style backend
-- File & image uploads (Multer + Cloudinary)
-- OCR text extraction using Tesseract.js
-- PDF viewing/processing support
-- Email notifications via Nodemailer
-- Global state with Redux Toolkit + Redux Persist
-- Modern UI with Tailwind CSS and Ant Design
-- Client-server API communication with Axios
-- XSS protection using DOMPurify
-- Environment config with dotenv
-
----
+- JWT authentication and password hashing (bcrypt)
+- Modular MVC backend structure (routes, controllers, models)
+- File and image uploads (Multer + Cloudinary)
+- OCR text extraction (Tesseract.js)
+- PDF viewing and processing
+- Email delivery via Nodemailer
+- Global state management with Redux Toolkit and persistence
+- Frontend UI with Tailwind CSS and Ant Design
+- API client using Axios
+- Basic XSS protection using DOMPurify
+- Dev-friendly scripts and environment configuration
 
 ## Tech Stack
+- Frontend: React 18 (Vite), Redux Toolkit, Redux Persist, React Router, Tailwind CSS, Ant Design, Axios
+- Backend: Node.js, Express, Mongoose (MongoDB), dotenv, cors
+- Storage & Media: Cloudinary, Multer
+- Utilities: bcrypt, jsonwebtoken (JWT), Nodemailer, Tesseract.js, PDF.js
+- Tools: npm, nodemon (dev), optional concurrently for combined runs
 
-- Frontend: React 18 (Vite), Redux Toolkit, Redux Persist, React Router, Tailwind CSS, Ant Design, Axios, React Toastify, DOMPurify, PDF.js, Tesseract.js
-- Backend: Node.js, Express, MongoDB, Mongoose, JWT, bcrypt, Multer, Cloudinary, Nodemailer, dotenv, cors, fs-extra
-- Tools: npm, nodemon (dev), VS Code, Git
-
----
-
-## Folder Structure
-
+## Folder Structure (high level)
+```
 HEALTH_CARE_APP/
-- backend/ — Express API, models, controllers, routes, middlewares, config and env
-- frontend/ — Vite React app (src/, public/, components/, pages/, redux/)
-- .gitignore, README.md
-
-(See each folder for more details; structure may vary slightly.)
-
----
+├─ backend/            # Express API, controllers, models, routes, config
+├─ frontend/           # Vite React app (src/, public/, vite.config.js)
+├─ .gitignore
+└─ README.md
+```
+Brief notes:
+- backend/ contains the server entry (index.js), db connection, routes, controllers, middlewares, templates and utils.
+- frontend/ contains the React app source (components, pages, redux store, assets).
 
 ## Installation & Setup
 
-1. Clone the repository
-   ```bash
-   git clone https://github.com/zahimahmedkhan/HEALTH_CARE_APP.git
-   cd HEALTH_CARE_APP
-   ```
+1. Clone repository
+```bash
+git clone <repo-url>
+cd HEALTH_CARE_APP
+```
 
 2. Backend
-   ```bash
-   cd backend
-   npm install
-   # create .env (see Environment Variables)
-   npm run dev    # or npm start for production
-   ```
+```bash
+cd backend
+npm install
+# create .env (see Environment Variables)
+npm run dev   # or npm start for production
+```
 
 3. Frontend
-   ```bash
-   cd ../frontend
-   npm install
-   npm run dev
-   # npm run build to produce production bundle
-   ```
+```bash
+cd frontend
+npm install
+npm run dev   # starts Vite dev server (typically http://localhost:5173)
+```
 
-Tip: Run backend on PORT 5000 and frontend on PORT 3000 by default; adjust env and proxy settings as needed.
-
----
+Tip: Use separate terminals for frontend and backend. Optionally add a root script using concurrently to run both.
 
 ## Environment Variables
-
-Create a `.env` file in the backend directory. Typical variables:
+Create a `.env` in backend/ (and frontend/ if needed). Typical variables used by the project:
 
 - PORT=5000
 - MONGO_URI=your_mongodb_connection_string
 - JWT_SECRET=your_jwt_secret
 - CLOUDINARY_CLOUD_NAME=your_cloud_name
-- CLOUDINARY_API_KEY=your_api_key
-- CLOUDINARY_API_SECRET=your_api_secret
+- CLOUDINARY_API_KEY=your_cloudinary_api_key
+- CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 - EMAIL_USER=your_email_address
 - EMAIL_PASS=your_email_password
+- (Optional) CLIENT_URL=http://localhost:5173
 
-Frontend may also use a `.env` (e.g., VITE_API_URL) depending on configuration.
-
----
+Adjust names to match code if a .env.example exists.
 
 ## Usage / How to Run
+- Backend
+  - Development: npm run dev (requires nodemon)
+  - Production: npm start
+- Frontend
+  - Development: npm run dev
+  - Production build: npm run build
 
-- Development
-  - Backend: cd backend && npm run dev
-  - Frontend: cd frontend && npm run dev
-- Production
-  - Build frontend: cd frontend && npm run build
-  - Serve static build and run backend server (configure as needed)
-
-API base paths typically live under `/api/*` — check backend routes for exact endpoints. Update frontend API base URL to match backend (e.g., http://localhost:5000).
-
----
+API base: by default the backend runs on http://localhost:5000 — update frontend API base or proxy as needed. Review backend routes under backend/routes for available endpoints.
 
 ## Screenshots
-
-(Replace with actual images/screenshots in the repo)
-
-- Frontend Home / Dashboard — ![placeholder](./frontend/public/screenshot-1.png)
-- Sample OCR Output — ![placeholder](./frontend/public/screenshot-2.png)
-- Backend API Response (Postman) — ![placeholder](./frontend/public/screenshot-3.png)
-
----
+(Replace placeholders with actual images/screenshots)
+- Frontend Home / Dashboard
+- PDF Viewer / OCR result view
+- Example API response in Postman
 
 ## Future Improvements
-
-- Add authentication flows and example protected routes (if not already present)
-- Add automated tests (Jest, React Testing Library, supertest)
-- Add Docker / Docker Compose for local development
-- CI/CD workflow (GitHub Actions)
-- Improved error handling and logging
-- Example deployment configs (Heroku, Vercel, or Docker)
-
----
+- Add authentication flows with refresh tokens and role‑based access control
+- Add unit & integration tests (Jest, React Testing Library, supertest)
+- Add Docker and docker-compose for local multi‑service development
+- Add CI/CD (GitHub Actions) and automatic deployments
+- Improve documentation for API endpoints and frontend components
 
 ## Author / Credits
-
 Zahim Ahmed Khan  
 GitHub: https://github.com/zahimahmedkhan
 
----
-
 ## License
-
-MIT License — see LICENSE file or add standard MIT header.
-
----
-
-If you find this project useful, please give it a ⭐ on GitHub.
+MIT License — see LICENSE file or include standard MIT header.
