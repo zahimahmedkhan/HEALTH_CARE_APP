@@ -3,6 +3,9 @@
 A full-stack healthcare application template built with React (Vite) + Redux Toolkit on the frontend and Node.js + Express + MongoDB on the backend. Designed for rapid prototyping and hackathons, this project includes authentication, file uploads, OCR support, PDF handling, email services, and modern UI tooling.
 
 ---
+Live Link :[HEALTH-CARE-APP ](https://health-care-app-nu-virid.vercel.app)
+
+
 
 ## Project Snapshot
 
