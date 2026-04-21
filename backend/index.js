@@ -7,7 +7,7 @@ import cors from "cors";
 const app = express();
 app.set("trust proxy", 1);
 const port = process.env.PORT || 5000;
-const FrontEnd_Url = process.env.FRONTEND_URL
+const FrontEnd_Url = process.env.FRONTEND_URL;
 
 // Database connection
 const db = mongoose.connection;
@@ -24,26 +24,52 @@ db.once("open", () => {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+const normalizeOrigin = (value) => value.trim().replace(/\/+$/, "");
+
 const allowedOrigins = FrontEnd_Url
-  ? FrontEnd_Url.split(",").map(url => url.trim())
+  ? FrontEnd_Url.split(",").map(normalizeOrigin).filter(Boolean)
   : [];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow Postman / server-side requests
-      if (!origin) return callback(null, true);
+const isOriginAllowed = (origin) => {
+  const normalizedOrigin = normalizeOrigin(origin);
 
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS blocked for origin: ${origin}`));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  })
-);
+  return allowedOrigins.some((allowed) => {
+    // Exact match (e.g. https://myapp.vercel.app)
+    if (!allowed.includes("*")) {
+      return normalizedOrigin === allowed;
+    }
+
+    // Wildcard suffix match (e.g. https://*.vercel.app)
+    const wildcardPrefix = "https://*.";
+    if (allowed.startsWith(wildcardPrefix)) {
+      const domainSuffix = allowed.slice(wildcardPrefix.length);
+      return (
+        normalizedOrigin.startsWith("https://") &&
+        normalizedOrigin.slice("https://".length).endsWith(`.${domainSuffix}`)
+      );
+    }
+
+    return false;
+  });
+};
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow Postman / server-side requests
+    if (!origin) return callback(null, true);
+
+    if (isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Health check route
 app.get("/", (req, res) => {
