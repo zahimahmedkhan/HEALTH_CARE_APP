@@ -209,7 +209,7 @@ const DashboardLayout = () => {
         <div className="flex items-center justify-center h-16 mx-4 my-4 font-bold uppercase text-white" style={{ color: "white" }}>
           {!collapsed ?(
             <>
-            <img src="/health-icon.png" alt="Health Icon" className="w-8 h-8 mr-2 brightness-0 invert" />  HealthPro
+              HealthPro
             </>
           )  : ( "HP")}
         </div>
