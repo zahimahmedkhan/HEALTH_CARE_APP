@@ -8,6 +8,7 @@ const app = express();
 app.set("trust proxy", 1);
 const port = process.env.PORT || 5000;
 const FrontEnd_Url = process.env.FRONTEND_URL;
+const FrontEnd_Urls = process.env.FRONTEND_URLS;
 
 // Database connection
 const db = mongoose.connection;
@@ -26,9 +27,24 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 const normalizeOrigin = (value) => value.trim().replace(/\/+$/, "");
 
-const allowedOrigins = FrontEnd_Url
-  ? FrontEnd_Url.split(",").map(normalizeOrigin).filter(Boolean)
-  : [];
+const defaultAllowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "https://*.vercel.app",
+];
+
+const configuredOrigins = [FrontEnd_Url, FrontEnd_Urls]
+  .filter(Boolean)
+  .flatMap((value) => value.split(","));
+
+const allowedOrigins = (configuredOrigins.length > 0
+  ? configuredOrigins
+  : defaultAllowedOrigins
+)
+  .map(normalizeOrigin)
+  .filter(Boolean);
 
 const isOriginAllowed = (origin) => {
   const normalizedOrigin = normalizeOrigin(origin);
@@ -62,7 +78,8 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
+    // Do not throw server 500 for blocked origins; just deny CORS.
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
