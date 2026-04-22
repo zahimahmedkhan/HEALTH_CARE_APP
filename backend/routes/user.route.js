@@ -5,7 +5,27 @@ import upload from '../config/multer.js'
 
 const userRoute = express.Router();
 
-userRoute.post("/register", upload.single('avatar'), registerUser);
+const registerUpload = (req, res, next) => {
+    const contentType = req.headers["content-type"] || "";
+
+    // Only run multer for multipart requests
+    if (!contentType.includes("multipart/form-data")) {
+        return next();
+    }
+
+    upload.single("avatar")(req, res, (err) => {
+        if (err) {
+            console.error("❌ Register Multer Error:", err.message);
+            return res.status(400).send({
+                status: 400,
+                message: "Avatar upload error: " + err.message,
+            });
+        }
+        next();
+    });
+};
+
+userRoute.post("/register", registerUpload, registerUser);
 
 userRoute.get("/verify-email/:token", verifyEmail);
 

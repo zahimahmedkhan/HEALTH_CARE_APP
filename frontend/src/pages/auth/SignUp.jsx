@@ -64,24 +64,35 @@ const SignUp = () => {
       setLoading(true);
       setErrors({});
 
-      const formData = new FormData();
-      formData.append("userName", value.name);
-      formData.append("email", value.email);
-      formData.append("password", value.password);
-      
+      const payload = {
+        userName: value.name,
+        email: value.email,
+        password: value.password,
+      };
+
+      const requestConfig = {
+        withCredentials: true,
+      };
+
+      let requestBody = payload;
+
+      // Use multipart only when avatar exists; otherwise send JSON for reliability.
       if (avatarFile) {
+        const formData = new FormData();
+        formData.append("userName", value.name);
+        formData.append("email", value.email);
+        formData.append("password", value.password);
         formData.append("avatar", avatarFile);
+        requestBody = formData;
+        requestConfig.headers = {
+          "Content-Type": "multipart/form-data",
+        };
       }
 
       const res = await axios.post(
         `${apiUrl}/auth/register`,
-        formData,
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        requestBody,
+        requestConfig
       );
 
       if (res.data?.status === 201) {
