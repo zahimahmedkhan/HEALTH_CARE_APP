@@ -7,11 +7,22 @@ import { generateAccessToken, generateRefreshToken } from "../utils/generateToke
 import { sendResponse } from "../utils/sendResponse.js";
 import "dotenv/config"
 import { uploadFileToCloudinary } from "../utils/uploadToCloudniary.js";
+import { ensureDbConnection } from "../db/db.js";
 // Note: AISummery is used in aiSummery function below
 import { AISummery } from "../utils/aiSummery.js";
 
 const registerUser = async (req, res) => {
     try {
+        try {
+            await ensureDbConnection();
+        } catch (dbError) {
+            console.error("❌ DB unavailable during register:", dbError.message);
+            return res.status(503).send({
+                status: 503,
+                message: "Database unavailable. Please try again in a moment.",
+            });
+        }
+
         const { userName, email, password } = req.body;
 
         // Validate required fields
