@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* Keep layout width stable when AntD modal locks body scroll */
+body.ant-scrolling-effect {
+  width: 100% !important;
+}
