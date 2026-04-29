@@ -305,7 +305,6 @@ function Reports() {
           )
         }
         open={previewVisible}
-        getContainer={false}
         destroyOnHidden
         onCancel={() => {
           setPreviewVisible(false);

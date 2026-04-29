@@ -365,7 +365,6 @@ const UploadReportForm = () => {
           </div>
         }
         open={modalVisible}
-        getContainer={false}
         destroyOnHidden
         onCancel={() => {
           setModalVisible(false);
