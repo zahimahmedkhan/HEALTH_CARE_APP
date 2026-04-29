@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
-/* Keep layout width stable when AntD modal locks body scroll */
+/* Keep viewport width stable when modals toggle scroll lock */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+/* Prevent AntD from compensating width/padding on body */
 body.ant-scrolling-effect {
   width: 100% !important;
+  padding-right: 0 !important;
 }
