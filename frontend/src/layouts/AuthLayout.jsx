@@ -38,7 +38,7 @@ const AuthLayout = () => {
 
         {/* Footer */}
         <p className="text-center text-xs mt-6" style={{ color: "#1F2933" }}>
-          Secure • Private • AI-Powered
+          Secure • Private 
         </p>
       </div>
     </div>

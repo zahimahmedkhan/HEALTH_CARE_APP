@@ -20,6 +20,13 @@ function Reports() {
   const [previewReport, setPreviewReport] = useState(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
+  const cleanupBodyModalStyles = useCallback(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.remove("ant-scrolling-effect");
+    document.body.style.removeProperty("overflow");
+    document.body.style.removeProperty("width");
+  }, []);
+
   const fetchReports = useCallback(async (signal) => {
     try {
       setLoading(true);
@@ -41,8 +48,17 @@ function Reports() {
   useEffect(() => {
     const controller = new AbortController();
     fetchReports(controller.signal);
-    return () => controller.abort();
-  }, [fetchReports]);
+    return () => {
+      controller.abort();
+      cleanupBodyModalStyles();
+    };
+  }, [fetchReports, cleanupBodyModalStyles]);
+
+  useEffect(() => {
+    if (!previewVisible) {
+      cleanupBodyModalStyles();
+    }
+  }, [previewVisible, cleanupBodyModalStyles]);
 
   // Use useMemo for filtering instead of useEffect + state
   const filteredReports = useMemo(() => {
@@ -289,14 +305,27 @@ function Reports() {
           )
         }
         open={previewVisible}
-        onCancel={() => setPreviewVisible(false)}
+        onCancel={() => {
+          setPreviewVisible(false);
+          cleanupBodyModalStyles();
+        }}
         width={typeof window !== "undefined" && window.innerWidth < 768 ? "95vw" : 800}
         footer={[
-          <Button key="close" type="primary" onClick={() => setPreviewVisible(false)}>
+          <Button
+            key="close"
+            type="primary"
+            onClick={() => {
+              setPreviewVisible(false);
+              cleanupBodyModalStyles();
+            }}
+          >
             Close
           </Button>,
         ]}
         styles={{ body: { maxHeight: "70vh", overflowY: "auto" } }}
+        afterOpenChange={(open) => {
+          if (!open) cleanupBodyModalStyles();
+        }}
       >
         {previewReport && (
           <div>

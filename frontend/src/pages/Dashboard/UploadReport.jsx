@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Form, Input, Select, Button, message, Card, Modal, Progress, Steps, Row, Col, Tag, Alert, Divider } from "antd";
 import { CloudUploadOutlined, FileOutlined, CheckCircleOutlined, LoadingOutlined, RobotOutlined } from "@ant-design/icons";
 import DOMPurify from "dompurify";
@@ -19,6 +19,25 @@ const UploadReportForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [reportName, setReportName] = useState("");
   const [reportType, setReportType] = useState("");
+
+  const cleanupBodyModalStyles = useCallback(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.remove("ant-scrolling-effect");
+    document.body.style.removeProperty("overflow");
+    document.body.style.removeProperty("width");
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      cleanupBodyModalStyles();
+    };
+  }, [cleanupBodyModalStyles]);
+
+  useEffect(() => {
+    if (!modalVisible) {
+      cleanupBodyModalStyles();
+    }
+  }, [modalVisible, cleanupBodyModalStyles]);
 
   const reportTypes = [
     { value: "blood-test", label: "Blood Test", icon: "🩸", color: "red" },
@@ -346,15 +365,30 @@ const UploadReportForm = () => {
           </div>
         }
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          setModalVisible(false);
+          cleanupBodyModalStyles();
+        }}
         width={typeof window !== "undefined" && window.innerWidth < 768 ? "95vw" : 800}
         footer={[
-          <Button key="close" type="primary" onClick={() => setModalVisible(false)} size="large" className="rounded-lg">
+          <Button
+            key="close"
+            type="primary"
+            onClick={() => {
+              setModalVisible(false);
+              cleanupBodyModalStyles();
+            }}
+            size="large"
+            className="rounded-lg"
+          >
             Close
           </Button>,
         ]}
         styles={{ body: { maxHeight: "70vh", overflowY: "auto" } }}
         className="rounded-xl"
+        afterOpenChange={(open) => {
+          if (!open) cleanupBodyModalStyles();
+        }}
       >
         <div className="prose prose-sm max-w-none">
           <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(aiSummary || "") }} />
