@@ -2,6 +2,7 @@ import "./App.css";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import SignUp from "./pages/auth/SignUp";
 import SignIn from "./pages/auth/SignIn";
+import Landing from "./pages/Landing";
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -19,10 +20,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Landing />} />
+
         {/* Auth Routes */}
         <Route element={<AuthLayout />}>
-          <Route index element={<SignUp />} />
-          <Route path="/signin" element={<SignIn />} />
+          <Route path="/login" element={<SignIn />} />
+          <Route path="/signin" element={<Navigate to="/login" replace />} />
+          <Route path="/signup" element={<SignUp />} />
           <Route path="/auth/email-verification" element={<EmailVerificationPending />} />
           <Route path="/verify-email/:token" element={<EmailVerification />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

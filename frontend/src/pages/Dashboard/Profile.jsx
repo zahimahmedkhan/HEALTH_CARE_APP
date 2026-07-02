@@ -10,6 +10,7 @@ import {
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/axiosSetup";
+import PrimaryButton from "../../components/PrimaryButton";
 
 export default function Profile() {
   const [form] = Form.useForm();
@@ -20,12 +21,15 @@ export default function Profile() {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const navigate = useNavigate();
 
+  const watchedPhone = Form.useWatch("phone", form);
+  const watchedDob = Form.useWatch("dob", form);
+
   const fetchUserProfile = useCallback(async (signal) => {
     const token = localStorage.getItem("accessToken");
     
     if (!token) {
       message.error("Authentication token missing. Please login again.");
-      navigate("/signin");
+      navigate("/login");
       return;
     }
     
@@ -51,7 +55,7 @@ export default function Profile() {
         message.error("Session expired. Please login again.");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        navigate("/signin");
+        navigate("/login");
       } else {
         message.error(error.response?.data?.message || "Failed to fetch profile");
       }
@@ -64,7 +68,7 @@ export default function Profile() {
     const token = localStorage.getItem("accessToken");
     if (!token) {
       message.error("Please login first");
-      navigate("/signin");
+      navigate("/login");
       return;
     }
     
@@ -101,26 +105,43 @@ export default function Profile() {
   const onFinish = async (values) => {
     try {
       setLoading(true);
-      
-      const formData = new FormData();
-      formData.append("userName", values.fullName);
-      formData.append("phone", values.phone || "");
-      formData.append("dob", values.dob ? values.dob.toISOString() : "");
-      
-      if (avatarFile) {
-        formData.append("avatar", avatarFile);
-      }
 
-      // Use api instance with proper headers for multipart form data
-      const res = await api.put("/auth/update-profile", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const payload = {
+        userName: values.fullName,
+        phone: values.phone || "",
+        dob: values.dob ? values.dob.toISOString() : "",
+      };
+
+      let res;
+
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append("userName", payload.userName);
+        formData.append("phone", payload.phone);
+        formData.append("dob", payload.dob);
+        formData.append("avatar", avatarFile);
+
+        // Do not set Content-Type manually — axios must include the multipart boundary
+        res = await api.put("/auth/update-profile", formData);
+      } else {
+        res = await api.put("/auth/update-profile", payload);
+      }
 
       if (res.data?.status === 200) {
         message.success(res.data?.message || "Profile updated successfully");
         setAvatarFile(null);
+
+        if (res.data?.user) {
+          setUserData(res.data.user);
+          setAvatarPreview(res.data.user.avatar);
+          form.setFieldsValue({
+            fullName: res.data.user.userName,
+            email: res.data.user.email,
+            phone: res.data.user.phone || "",
+            dob: res.data.user.dob ? dayjs(res.data.user.dob) : null,
+          });
+        }
+
         await fetchUserProfile();
       } else {
         message.error(res.data?.message || "Failed to update profile");
@@ -141,150 +162,109 @@ export default function Profile() {
     );
   }
 
+  const displayPhone = watchedPhone || userData?.phone || "";
+  const displayDob = watchedDob || (userData?.dob ? dayjs(userData.dob) : null);
+  const formattedDob = displayDob ? dayjs(displayDob).format("MMMM D, YYYY") : null;
+
   return (
-    <div className="min-h-screen px-3 py-4 sm:p-6" style={{ backgroundColor: "#F7F9FC" }}>
+    <div className="min-h-screen px-3 py-4 sm:p-6" style={{ backgroundColor: "var(--bg)" }}>
       <div className="max-w-4xl mx-auto">
-        <div className="rounded-3xl shadow-2xl border border-white/80 backdrop-blur-sm overflow-hidden" style={{ backgroundColor: "white" }}>
+        <div className="card overflow-hidden">
           {/* Header Section */}
-          <div className="p-5 sm:p-8" style={{ backgroundImage: "linear-gradient(135deg, #0F4C81 0%, #2EC4B6 100%)" }}>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 sm:mb-3">Personal Information</h2>
-            <p className="text-white/80 text-base sm:text-lg">
-              Manage your account details and preferences
-            </p>
+          <div className="p-5 sm:p-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3" style={{ color: "var(--text)" }}>Personal Information</h2>
+            <p className="text-base sm:text-lg" style={{ color: "var(--muted)" }}>Manage your account details and preferences</p>
           </div>
 
           <div className="p-4 sm:p-8">
           {/* Avatar Section */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 mb-8 sm:mb-12 p-4 sm:p-6 bg-white rounded-2xl shadow-lg border" style={{ borderColor: "#2EC4B6", backgroundColor: "#F7F9FC" }}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 mb-8 sm:mb-12 p-4 sm:p-6 rounded-lg border" style={{ borderColor: "var(--border)", backgroundColor: "transparent" }}>
             <div className="relative">
-              <Avatar
-                size={100}
-                src={avatarPreview}
-                icon={!avatarPreview && <UserOutlined />}
-                className="text-white shadow-xl border-4 border-white"
-                style={{ backgroundColor: "#0F4C81" }}
-              />
-              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-500 rounded-full border-4 border-white flex items-center justify-center">
-                <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-              </div>
+              <Avatar size={100} src={avatarPreview} icon={!avatarPreview && <UserOutlined />} className="text-white" style={{ backgroundColor: "var(--primary)" }} />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold mb-2" style={{ color: "#1F2933" }}>Profile Picture</h3>
-              <p className="text-sm mb-4" style={{ color: "#1F2933" }}>Update your avatar and profile image</p>
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <label className="text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer text-center" style={{ backgroundImage: "linear-gradient(135deg, #0F4C81, #2EC4B6)" }}>
-                  Change Avatar
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                </label>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setAvatarFile(null);
-                    setAvatarPreview(userData?.avatar || null);
-                  }}
-                  className="border-2 font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-md text-center"
-                  style={{ borderColor: "#0F4C81", color: "#0F4C81", backgroundColor: "white" }}
+              <h3 className="text-lg font-semibold mb-1" style={{ color: "var(--text)" }}>
+                {userData?.userName || "Your Profile"}
+              </h3>
+              <p className="text-sm mb-3" style={{ color: "var(--muted)" }}>{userData?.email}</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span
+                  className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full border"
+                  style={{ borderColor: "var(--border)", color: displayPhone ? "var(--text)" : "var(--muted)", backgroundColor: "var(--bg)" }}
                 >
-                  Remove
-                </button>
+                  <PhoneOutlined style={{ color: "var(--primary)" }} />
+                  {displayPhone || "Phone not added"}
+                </span>
+                <span
+                  className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full border"
+                  style={{ borderColor: "var(--border)", color: formattedDob ? "var(--text)" : "var(--muted)", backgroundColor: "var(--bg)" }}
+                >
+                  <CalendarOutlined style={{ color: "var(--primary)" }} />
+                  {formattedDob || "Date of birth not added"}
+                </span>
+              </div>
+              <p className="text-sm mb-4" style={{ color: "var(--muted)" }}>Update your avatar and profile image</p>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <label className="font-semibold py-3 px-6 rounded-lg cursor-pointer text-center" style={{ backgroundColor: "var(--primary)", color: "white" }}>
+                  Change Avatar
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                </label>
+                <button type="button" onClick={() => { setAvatarFile(null); setAvatarPreview(userData?.avatar || null); }} className="border-2 font-semibold py-3 px-6 rounded-lg" style={{ borderColor: "var(--primary)", color: "var(--primary)", backgroundColor: "white" }}>Remove</button>
               </div>
             </div>
           </div>
 
+          {/* Saved details overview */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            <div className="rounded-lg border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}>
+              <p className="text-xs uppercase tracking-wide font-semibold mb-2" style={{ color: "var(--muted)" }}>Phone Number</p>
+              <p className="text-base font-semibold flex items-center gap-2" style={{ color: displayPhone ? "var(--text)" : "var(--muted)" }}>
+                <PhoneOutlined style={{ color: "var(--primary)" }} />
+                {displayPhone || "Not provided yet"}
+              </p>
+            </div>
+            <div className="rounded-lg border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}>
+              <p className="text-xs uppercase tracking-wide font-semibold mb-2" style={{ color: "var(--muted)" }}>Date of Birth</p>
+              <p className="text-base font-semibold flex items-center gap-2" style={{ color: formattedDob ? "var(--text)" : "var(--muted)" }}>
+                <CalendarOutlined style={{ color: "var(--primary)" }} />
+                {formattedDob || "Not provided yet"}
+              </p>
+            </div>
+          </div>
+
           {/* Form Section */}
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={onFinish}
-            className="space-y-8"
-          >
+          <Form form={form} layout="vertical" onFinish={onFinish} className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <Form.Item
-                name="fullName"
-                label={<span className="font-semibold text-lg" style={{ color: "#1F2933" }}>Full Name</span>}
-                rules={[{ required: true, message: "Please enter your full name" }]}
-              >
-                <Input 
-                  placeholder="Enter your full name" 
-                  size="large"
-                  className="h-14 rounded-xl border-2 transition-colors duration-300 shadow-sm"
-                  style={{ borderColor: "#2EC4B6", color: "#1F2933" }}
-                  prefix={<UserOutlined style={{ color: "#0F4C81" }} />}
-                />
+              <Form.Item name="fullName" label={<span className="font-semibold text-lg" style={{ color: "var(--text)" }}>Full Name</span>} rules={[{ required: true, message: "Please enter your full name" }]}>
+                <Input placeholder="Enter your full name" size="large" className="h-14 rounded-lg" style={{ borderColor: "var(--border)", color: "var(--text)" }} prefix={<UserOutlined style={{ color: "var(--primary)" }} />} />
               </Form.Item>
 
-              <Form.Item
-                name="email"
-                label={<span className="font-semibold text-lg" style={{ color: "#1F2933" }}>Email Address</span>}
-                rules={[
-                  {
-                    type: "email",
-                    required: true,
-                    message: "Please enter a valid email",
-                  },
-                ]}
-              >
-                <Input 
-                  placeholder="your.email@example.com" 
-                  size="large"
-                  disabled
-                  className="h-14 rounded-xl border-2 transition-colors duration-300 shadow-sm"
-                  style={{ borderColor: "#2EC4B6", color: "#1F2933", backgroundColor: "#F7F9FC" }}
-                  prefix={<MailOutlined style={{ color: "#0F4C81" }} />}
-                />
+              <Form.Item name="email" label={<span className="font-semibold text-lg" style={{ color: "var(--text)" }}>Email Address</span>} rules={[{ type: "email", required: true, message: "Please enter a valid email" }]}>
+                <Input placeholder="your.email@example.com" size="large" disabled className="h-14 rounded-lg" style={{ borderColor: "var(--border)", color: "var(--text)", backgroundColor: "var(--bg)" }} prefix={<MailOutlined style={{ color: "var(--primary)" }} />} />
               </Form.Item>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <Form.Item 
-                name="phone" 
-                label={<span className="font-semibold text-lg" style={{ color: "#1F2933" }}>Phone Number</span>}
-              >
-                <Input 
-                  placeholder="+1 (555) 123-4567" 
-                  size="large"
-                  className="h-14 rounded-xl border-2 transition-colors duration-300 shadow-sm"
-                  style={{ borderColor: "#2EC4B6", color: "#1F2933" }}
-                  prefix={<PhoneOutlined style={{ color: "#0F4C81" }} />}
-                />
+              <Form.Item name="phone" label={<span className="font-semibold text-lg" style={{ color: "var(--text)" }}>Phone Number</span>}>
+                <Input placeholder="+1 (555) 123-4567" size="large" className="h-14 rounded-lg" style={{ borderColor: "var(--border)", color: "var(--text)" }} prefix={<PhoneOutlined style={{ color: "var(--primary)" }} />} />
               </Form.Item>
 
-              <Form.Item 
-                name="dob" 
-                label={<span className="font-semibold text-lg" style={{ color: "#1F2933" }}>Date of Birth</span>}
-              >
-                <DatePicker 
-                  className="w-full h-14 rounded-xl border-2 transition-colors duration-300 shadow-sm"
-                  style={{ borderColor: "#2EC4B6", color: "#1F2933" }}
+              <Form.Item name="dob" label={<span className="font-semibold text-lg" style={{ color: "var(--text)" }}>Date of Birth</span>}>
+                <DatePicker
+                  className="w-full h-14 rounded-lg"
+                  style={{ borderColor: "var(--border)", color: "var(--text)" }}
                   size="large"
-                  suffixIcon={<CalendarOutlined style={{ color: "#0F4C81" }} />}
+                  format="MMMM D, YYYY"
+                  placeholder="Select your date of birth"
+                  suffixIcon={<CalendarOutlined style={{ color: "var(--primary)" }} />}
                 />
               </Form.Item>
             </div>
 
             {/* Save Button */}
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end pt-6 gap-3 sm:gap-4" style={{ borderTopColor: "#E0E7FF", borderTopWidth: "1px" }}>
-              <Button
-                size="large"
-                style={{ color: "#0F4C81", borderColor: "#0F4C81" }}
-                className="font-semibold rounded-lg w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-              <button
-                type="submit"
-                className="text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-base flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-                style={{ backgroundImage: "linear-gradient(135deg, #0F4C81, #2EC4B6)" }}
-                disabled={loading}
-              >
-                <SaveOutlined className="group-hover:scale-110 transition-transform duration-300" />
-                {loading ? "Saving..." : "Save Changes"}
-              </button>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end pt-6 gap-3 sm:gap-4" style={{ borderTopColor: "var(--border)", borderTopWidth: "1px" }}>
+              <Button size="large" style={{ color: "var(--primary)", borderColor: "var(--primary)" }} className="font-semibold rounded-lg w-full sm:w-auto">Cancel</Button>
+              <PrimaryButton htmlType="submit" isLoading={loading} text={loading ? "Saving..." : "Save Changes"} />
             </div>
           </Form>
           </div>

@@ -74,7 +74,7 @@ const EmailVerification = () => {
       <p className="text-gray-500 mb-8 text-lg">Your account has been verified and is ready to use</p>
       
       <Link 
-        to="/signin" 
+        to="/login" 
         className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
       >
         <span>Continue to Sign In</span>

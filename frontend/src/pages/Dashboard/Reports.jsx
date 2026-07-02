@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Tag, message, Empty, Input, Card, Row, Col, Modal, Divider, Spin, Popconfirm, Space } from "antd";
+import { Button, Tag, message, Empty, Input, Row, Col, Modal, Divider, Spin, Popconfirm, Space } from "antd";
 import {
   FileTextOutlined,
   DeleteOutlined,
@@ -11,6 +11,7 @@ import {
 } from "@ant-design/icons";
 import DOMPurify from "dompurify";
 import api from "../../utils/axiosSetup";
+import PrimaryButton from "../../components/PrimaryButton";
 
 function Reports() {
   const [reports, setReports] = useState([]);
@@ -127,7 +128,7 @@ function Reports() {
   const reportTypes = ["all", ...new Set(reports.map((r) => r.reportType))];
 
   return (
-    <div className="min-h-screen py-6 sm:py-8 px-3 sm:px-4" style={{ backgroundColor: "#F7F9FC" }}>
+    <div className="min-h-screen py-6 sm:py-8 px-3 sm:px-4" style={{ backgroundColor: "var(--bg)" }}>
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -143,51 +144,43 @@ function Reports() {
         {reports.length > 0 && (
           <Row gutter={[16, 16]} className="mb-8">
             <Col xs={24} sm={8}>
-              <Card className="rounded-xl shadow-md border-0 hover:shadow-lg transition-shadow text-center">
-                <div className="text-3xl font-bold" style={{ color: "#0F4C81" }}>{reports.length}</div>
-                <div style={{ color: "#1F2933" }} className="text-sm">Total Reports</div>
-              </Card>
+              <div className="card p-4 text-center">
+                <div className="text-3xl font-bold" style={{ color: "var(--primary)" }}>{reports.length}</div>
+                <div style={{ color: "var(--muted)" }} className="text-sm">Total Reports</div>
+              </div>
             </Col>
             <Col xs={24} sm={8}>
-              <Card className="rounded-xl shadow-md border-0 hover:shadow-lg transition-shadow text-center">
-                <div className="text-3xl font-bold text-green-600">{new Set(reports.map((r) => r.reportType)).size}</div>
-                <div style={{ color: "#1F2933" }} className="text-sm">Report Types</div>
-              </Card>
+              <div className="card p-4 text-center">
+                <div className="text-3xl font-bold" style={{ color: "var(--success)" }}>{new Set(reports.map((r) => r.reportType)).size}</div>
+                <div style={{ color: "var(--muted)" }} className="text-sm">Report Types</div>
+              </div>
             </Col>
             <Col xs={24} sm={8}>
-              <Card className="rounded-xl shadow-md border-0 hover:shadow-lg transition-shadow text-center">
-                <div className="text-3xl font-bold text-purple-600">
+              <div className="card p-4 text-center">
+                <div className="text-3xl font-bold" style={{ color: "var(--muted)" }}>
                   {reports.length > 0 
                     ? new Date(reports[reports.length - 1]?.createdAt).toLocaleDateString()
                     : "N/A"}
                 </div>
-                <div style={{ color: "#1F2933" }} className="text-sm">Latest Upload</div>
-              </Card>
+                <div style={{ color: "var(--muted)" }} className="text-sm">Latest Upload</div>
+              </div>
             </Col>
           </Row>
         )}
 
         {/* Search and Filter */}
-        <Card className="rounded-xl shadow-md border-0 mb-12 bg-white">
+        <div className="card p-4 mb-12">
           <div className="flex flex-col gap-4">
-            <Input
-              placeholder="Search reports by name or type..."
-              prefix={<SearchOutlined />}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              size="large"
-              className="rounded-lg"
-              allowClear
-            />
+            <Input placeholder="Search reports by name or type..." prefix={<SearchOutlined />} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} size="large" className="rounded-lg" allowClear />
 
             <div className="flex flex-wrap gap-2">
-              <span className="font-semibold" style={{ color: "#1F2933" }}>Filter:</span>
+              <span className="font-semibold" style={{ color: "var(--muted)" }}>Filter:</span>
               {reportTypes.map((type) => (
                 <Tag
                   key={type}
                   color={filterType === type ? undefined : "default"}
-                  style={filterType === type ? { backgroundColor: "#0F4C81", color: "white", userSelect: "none" } : { userSelect: "none" }}
-                  className="cursor-pointer px-3 py-1 rounded-full hover:shadow-md transition-all"
+                  style={filterType === type ? { backgroundColor: "var(--primary)", color: "white", userSelect: "none" } : { userSelect: "none" }}
+                  className="cursor-pointer px-3 py-1 rounded-full transition-all"
                   onClick={() => setFilterType(type)}
                 >
                   {type === "all" ? "All Reports" : type.replace("-", " ").toUpperCase()}
@@ -195,7 +188,7 @@ function Reports() {
               ))}
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Reports Grid */}
         <div className="mt-16">
@@ -221,26 +214,23 @@ function Reports() {
           <Row gutter={[24, 24]}>
             {filteredReports.map((report) => (
               <Col key={report._id} xs={24} sm={24} md={12} lg={8}>
-                <Card
-                  className="rounded-xl shadow-md border border-gray-100 h-full hover:shadow-xl transition-all duration-300 hover:scale-105 transform bg-white overflow-hidden group"
-                  styles={{ body: { padding: 0 } }}
-                >
+                <div className="card h-full overflow-hidden">
                   {/* Card Header */}
-                  <div className="p-4 border-b group-hover:transition-colors" style={{ backgroundColor: "#F7F9FC" }}>
+                  <div className="p-4 border-b" style={{ background: 'transparent', borderColor: 'var(--border)' }}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="text-3xl">{getTypeIcon(report.reportType)}</div>
                       <Tag color={getTypeColor(report.reportType)} className="text-xs font-semibold">
                         {report.reportType.toUpperCase()}
                       </Tag>
                     </div>
-                    <h3 className="text-lg font-bold line-clamp-2" style={{ color: "#1F2933" }}>{report.reportName}</h3>
+                    <h3 className="text-lg font-bold line-clamp-2" style={{ color: "var(--text)" }}>{report.reportName}</h3>
                   </div>
 
                   {/* Card Body */}
                   <div className="p-4">
                     <div className="space-y-3 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <CalendarOutlined className="text-gray-400" />
+                      <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
+                        <CalendarOutlined style={{ color: 'var(--border)' }} />
                         {new Date(report.createdAt).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "short",
@@ -250,43 +240,29 @@ function Reports() {
                         })}
                       </div>
                       {report.notes && (
-                        <div className="flex items-start gap-2 text-sm text-gray-600">
-                          <TagOutlined className="text-gray-400 mt-0.5" />
+                        <div className="flex items-start gap-2 text-sm" style={{ color: 'var(--muted)' }}>
+                          <TagOutlined style={{ color: 'var(--border)', marginTop: 6 }} />
                           <span className="line-clamp-2">{report.notes}</span>
                         </div>
                       )}
                     </div>
 
                     {/* AI Summary Preview */}
-                    <div className="bg-gray-50 rounded-lg p-3 mb-4 max-h-24 overflow-hidden">
-                      <p className="text-xs text-gray-600 line-clamp-4 leading-relaxed">
+                    <div className="rounded-lg p-3 mb-4 max-h-24 overflow-hidden" style={{ background: 'rgba(2,6,23,0.02)' }}>
+                      <p className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
                         {report.aiSummary?.replace(/<[^>]*>/g, "") || "No summary available"}
                       </p>
                     </div>
                   </div>
 
                   {/* Card Footer */}
-                  <div className="bg-gray-50 p-4 border-t flex gap-2">
-                    <Button
-                      type="primary"
-                      icon={<EyeOutlined />}
-                      onClick={() => handleView(report)}
-                      className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700 border-0"
-                    >
-                      View
-                    </Button>
-                    <Popconfirm
-                      title="Delete Report"
-                      description="Are you sure you want to delete this report?"
-                      onConfirm={() => handleDelete(report._id)}
-                      okText="Yes"
-                      cancelText="No"
-                      okButtonProps={{ danger: true }}
-                    >
+                  <div className="p-4 border-t flex gap-2" style={{ borderColor: 'var(--border)', background: 'transparent' }}>
+                    <Button type="primary" icon={<EyeOutlined />} onClick={() => handleView(report)} className="flex-1 rounded-lg" style={{ backgroundColor: 'var(--primary)', borderColor: 'var(--primary)' }}>View</Button>
+                    <Popconfirm title="Delete Report" description="Are you sure you want to delete this report?" onConfirm={() => handleDelete(report._id)} okText="Yes" cancelText="No" okButtonProps={{ danger: true }}>
                       <Button danger icon={<DeleteOutlined />} className="rounded-lg" />
                     </Popconfirm>
                   </div>
-                </Card>
+                </div>
               </Col>
             ))}
           </Row>

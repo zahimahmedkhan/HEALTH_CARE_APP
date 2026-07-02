@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://health-care-app-psi.vercel.app",
+  baseURL: import.meta.env.VITE_API_URL || "https://health-care-app-psi.vercel.app/api",
 });
 
 // Request interceptor to add token
@@ -47,7 +47,7 @@ api.interceptors.response.use(
         // Refresh failed, redirect to login
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        window.location.href = "/signin";
+        window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }

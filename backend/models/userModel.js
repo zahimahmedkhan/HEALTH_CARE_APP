@@ -20,6 +20,14 @@ const userSchema = new mongoose.Schema({
     avatar: {
         type: String,
     },
+    phone: {
+        type: String,
+        default: "",
+    },
+    dob: {
+        type: Date,
+        default: null,
+    },
     refreshToken: {
         type: String,
         default: null

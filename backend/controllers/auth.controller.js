@@ -358,7 +358,11 @@ const verifyOtp = async (req, res) => {
 
 const userProfile = async (req, res) => {
     try {
-        const user = await User.findOne({ _id: req.user._id });
+        await ensureDbConnection();
+
+        const user = await User.findOne({ _id: req.user._id })
+            .select("-password")
+            .lean();
 
         if (!user) {
             return sendResponse(res, 404, "User not found");
@@ -366,69 +370,84 @@ const userProfile = async (req, res) => {
 
         sendResponse(res, 200, "User profile successfully", { user });
     } catch (error) {
-        console.error("âŒ User Profile Error:", error);
+        console.error("User Profile Error:", error);
         sendResponse(res, 500, "Internal server error", { error: error.message })
     }
 }
 
 const updateUserProfile = async (req, res) => {
     try {
-        console.log("🔄 Update Profile Called");
-        console.log("📦 Body:", req.body);
-        console.log("🖼️ File:", req.file ? "File received" : "No file");
-        
+        await ensureDbConnection();
+
         const { userName, phone, dob } = req.body;
         const userId = req.user?._id;
-        
-        // ⚠️ Use .path for disk storage OR .buffer for memory storage
         const avatarData = req.file?.path || req.file?.buffer;
 
         if (!userId) {
             return sendResponse(res, 401, "Unauthorized - User ID not found");
         }
 
-        const user = await User.findOne({ _id: userId });
+        const user = await User.findById(userId);
 
         if (!user) {
             return sendResponse(res, 404, "User not found");
         }
 
-        // Update fields if provided
+        const updateFields = {};
+
         if (userName) {
             const existingUser = await User.findOne({ userName, _id: { $ne: userId } });
             if (existingUser) {
                 return sendResponse(res, 409, "Username already exists");
             }
-            user.userName = userName;
-        }
-        
-        if (phone) {
-            user.phone = phone;
-        }
-        
-        if (dob) {
-            user.dob = dob;
+            updateFields.userName = userName;
         }
 
-        // Upload and update avatar if provided
+        if (phone !== undefined) {
+            updateFields.phone = phone;
+        }
+
+        if (dob !== undefined) {
+            if (!dob) {
+                updateFields.dob = null;
+            } else {
+                const parsedDob = new Date(dob);
+                if (Number.isNaN(parsedDob.getTime())) {
+                    return sendResponse(res, 400, "Invalid date of birth");
+                }
+                updateFields.dob = parsedDob;
+            }
+        }
+
         if (avatarData) {
             try {
-                console.log("📤 Starting avatar upload...");
                 const publicPath = await uploadFileToCloudinary(avatarData);
                 if (publicPath?.secure_url) {
-                    user.avatar = publicPath.secure_url;
-                    console.log("✅ Avatar updated:", publicPath.secure_url);
+                    updateFields.avatar = publicPath.secure_url;
                 }
             } catch (uploadError) {
-                console.error("❌ Avatar Upload Error:", uploadError);
+                console.error("Avatar Upload Error:", uploadError);
                 return sendResponse(res, 500, "Failed to upload avatar: " + uploadError.message);
             }
         }
 
-        await user.save();
-        sendResponse(res, 200, "Profile updated successfully", { user });
+        if (Object.keys(updateFields).length === 0) {
+            return sendResponse(res, 400, "No profile fields provided to update");
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: updateFields },
+            { new: true, runValidators: true, lean: true }
+        ).select("-password");
+
+        if (!updatedUser) {
+            return sendResponse(res, 404, "User not found after update");
+        }
+
+        sendResponse(res, 200, "Profile updated successfully", { user: updatedUser });
     } catch (error) {
-        console.error("❌ Update Profile Error:", error);
+        console.error("Update Profile Error:", error);
         sendResponse(res, 500, "Internal server error", { error: error.message });
     }
 }

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Form, Input, Select, Button, message, Card, Modal, Progress, Steps, Row, Col, Tag, Alert, Divider } from "antd";
+import { Form, Input, Select, Button, message, Modal, Progress, Steps, Row, Col, Tag, Alert, Divider } from "antd";
 import { CloudUploadOutlined, FileOutlined, CheckCircleOutlined, LoadingOutlined, RobotOutlined } from "@ant-design/icons";
+import PrimaryButton from "../../components/PrimaryButton";
 import DOMPurify from "dompurify";
 import PDFUploader from "../../components/PDFUploader";
 import { extractPDFText } from "../../utils/pdfUtils";
@@ -130,8 +131,10 @@ const UploadReportForm = () => {
     }
   };
 
+  const colorMap = { red: "var(--danger)", orange: "var(--warning)", cyan: "var(--primary)", green: "var(--success)", purple: "var(--primary)" };
+
   return (
-    <div className="min-h-screen py-6 sm:py-8 px-3 sm:px-4" style={{ backgroundColor: "#F7F9FC" }}>
+    <div className="min-h-screen py-6 sm:py-8 px-3 sm:px-4" style={{ backgroundColor: "var(--bg)" }}>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -145,44 +148,32 @@ const UploadReportForm = () => {
 
         {/* Process Steps */}
         {loading && (
-          <Card className="rounded-xl shadow-md border-0 mb-6 bg-white">
+          <div className="card p-4 mb-6">
             <Steps
               current={currentStep}
               items={[
-                {
-                  title: "Extract",
-                  description: "Extracting text from PDF",
-                  icon: currentStep > 0 ? <CheckCircleOutlined /> : <LoadingOutlined />,
-                },
-                {
-                  title: "Process",
-                  description: "Processing with AI",
-                  icon: currentStep > 1 ? <CheckCircleOutlined /> : currentStep === 1 ? <LoadingOutlined /> : undefined,
-                },
-                {
-                  title: "Analyze",
-                  description: "Generating insights",
-                  icon: currentStep > 2 ? <CheckCircleOutlined /> : currentStep === 2 ? <LoadingOutlined /> : undefined,
-                },
+                { title: "Extract", description: "Extracting text from PDF", icon: currentStep > 0 ? <CheckCircleOutlined /> : <LoadingOutlined /> },
+                { title: "Process", description: "Processing with AI", icon: currentStep > 1 ? <CheckCircleOutlined /> : currentStep === 1 ? <LoadingOutlined /> : undefined },
+                { title: "Analyze", description: "Generating insights", icon: currentStep > 2 ? <CheckCircleOutlined /> : currentStep === 2 ? <LoadingOutlined /> : undefined },
               ]}
               status={loading ? "process" : "finish"}
             />
             {extractionProgress && currentStep === 1 && (
               <div className="mt-4 pt-4 border-t">
-                <p className="text-sm text-gray-600 mb-2">{extractionProgress}</p>
+                <p className="text-sm" style={{ color: "var(--muted)", marginBottom: 8 }}>{extractionProgress}</p>
               </div>
             )}
-          </Card>
+          </div>
         )}
 
         {/* Main Form */}
-        <Card className="rounded-xl shadow-lg border-0 bg-white overflow-hidden">
+        <div className="card overflow-hidden">
           {/* Header Section */}
-          <div className="p-6 mb-6 rounded-lg border-l-4 flex items-center gap-4" style={{ backgroundColor: "#F7F9FC", borderLeftColor: "#0F4C81" }}>
-            <CloudUploadOutlined className="text-4xl" style={{ color: "#0F4C81" }} />
+          <div className="p-6 mb-6 flex items-center gap-4">
+            <CloudUploadOutlined style={{ fontSize: 28, color: "var(--primary)" }} />
             <div>
-              <h2 className="text-2xl font-bold" style={{ color: "#1F2933" }}>Add New Report</h2>
-              <p style={{ color: "#1F2933" }}>Fill in the details and upload your medical document</p>
+              <h2 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Add New Report</h2>
+              <p style={{ color: "var(--muted)" }}>Fill in the details and upload your medical document</p>
             </div>
           </div>
 
@@ -203,13 +194,7 @@ const UploadReportForm = () => {
                     { min: 3, message: "Report name must be at least 3 characters" },
                   ]}
                 >
-                  <Input
-                    placeholder="e.g., Monthly Blood Test"
-                    size="large"
-                    className="rounded-lg"
-                    value={reportName}
-                    onChange={(e) => setReportName(e.target.value)}
-                  />
+                  <Input placeholder="e.g., Monthly Blood Test" size="large" className="rounded-lg" value={reportName} onChange={(e) => setReportName(e.target.value)} />
                 </Form.Item>
               </Col>
 
@@ -224,14 +209,7 @@ const UploadReportForm = () => {
                   name="reportType"
                   rules={[{ required: true, message: "Please select report type" }]}
                 >
-                  <Select
-                    placeholder="Select report type"
-                    size="large"
-                    className="rounded-lg"
-                    value={reportType}
-                    onChange={setReportType}
-                    optionLabelProp="label"
-                  >
+                  <Select placeholder="Select report type" size="large" className="rounded-lg" value={reportType} onChange={setReportType} optionLabelProp="label">
                     {reportTypes.map((type) => (
                       <Option key={type.value} value={type.value} label={
                         <div className="flex items-center gap-2">
@@ -252,16 +230,12 @@ const UploadReportForm = () => {
 
             {/* Type Preview */}
             {reportType && (
-              <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: getTypeInfo(reportType)?.color + "15", borderLeft: `4px solid var(--antd-color-${getTypeInfo(reportType)?.color})` }}>
+              <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: "transparent", borderLeft: `4px solid ${colorMap[getTypeInfo(reportType)?.color] || 'var(--primary)'}` }}>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{getTypeInfo(reportType)?.icon}</span>
                   <div>
-                    <p className="font-semibold text-gray-800">
-                      {getTypeInfo(reportType)?.label} Report Selected
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Your report will be analyzed as a {getTypeInfo(reportType)?.label.toLowerCase()}
-                    </p>
+                    <p className="font-semibold" style={{ color: "var(--text)" }}>{getTypeInfo(reportType)?.label} Report Selected</p>
+                    <p className="text-sm" style={{ color: "var(--muted)" }}>Your report will be analyzed as a {getTypeInfo(reportType)?.label.toLowerCase()}</p>
                   </div>
                 </div>
               </div>
@@ -269,13 +243,7 @@ const UploadReportForm = () => {
 
             {/* Notes */}
             <Form.Item label={<span className="text-base font-semibold">Additional Notes (Optional)</span>} name="notes">
-              <TextArea
-                rows={3}
-                placeholder="Add any notes about this report (allergies, medications, symptoms, etc.)"
-                maxLength={500}
-                showCount
-                className="rounded-lg"
-              />
+              <TextArea rows={3} placeholder="Add any notes about this report (allergies, medications, symptoms, etc.)" maxLength={500} showCount className="rounded-lg" />
             </Form.Item>
 
             <Divider />
@@ -286,72 +254,36 @@ const UploadReportForm = () => {
             </Form.Item>
 
             {fileList.length > 0 && (
-              <Alert
-                message={`✓ ${fileList[0].name} ready to upload (${(fileList[0].size / 1024 / 1024).toFixed(2)} MB)`}
-                type="success"
-                showIcon
-                className="mb-6 rounded-lg"
-              />
+              <Alert message={`✓ ${fileList[0].name} ready to upload (${(fileList[0].size / 1024 / 1024).toFixed(2)} MB)`} type="success" showIcon className="mb-6 rounded-lg" />
             )}
 
             {/* Submit Button */}
             <div className="flex gap-3">
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                className="flex-1 h-12 text-base font-bold rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md hover:shadow-lg transition-all"
-                loading={loading}
-                disabled={fileList.length === 0}
-              >
-                {loading ? (
-                  <>
-                    <LoadingOutlined style={{ marginRight: "8px" }} />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <RobotOutlined style={{ marginRight: "8px" }} />
-                    Analyze with AI
-                  </>
-                )}
-              </Button>
-              <Button
-                size="large"
-                className="h-12 text-base font-semibold rounded-lg"
-                onClick={() => {
-                  form.resetFields();
-                  setFileList([]);
-                  setReportName("");
-                  setReportType("");
-                }}
-                disabled={loading}
-              >
-                Clear
-              </Button>
+              <PrimaryButton htmlType="submit" isLoading={loading} text={loading ? "Processing..." : "Analyze with AI"} disabled={fileList.length === 0} />
+              <Button size="large" className="h-12 text-base font-semibold rounded-lg" onClick={() => { form.resetFields(); setFileList([]); setReportName(""); setReportType(""); }} disabled={loading}>Clear</Button>
             </div>
           </Form>
-        </Card>
+        </div>
 
         {/* Info Cards */}
         <Row gutter={[16, 16]} className="mt-8">
           <Col xs={24} sm={12}>
-            <Card className="rounded-xl shadow-md border-0 h-full hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <CheckCircleOutlined className="text-green-500" />
+            <div className="card p-4">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: "var(--text)" }}>
+                <CheckCircleOutlined style={{ color: "var(--success)" }} />
                 Supported Formats
               </h3>
-              <p className="text-sm text-gray-600">PDF documents (up to 10MB)</p>
-            </Card>
+              <p className="text-sm" style={{ color: "var(--muted)" }}>PDF documents (up to 10MB)</p>
+            </div>
           </Col>
           <Col xs={24} sm={12}>
-            <Card className="rounded-xl shadow-md border-0 h-full hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <RobotOutlined className="text-blue-500" />
+            <div className="card p-4">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: "var(--text)" }}>
+                <RobotOutlined style={{ color: "var(--primary)" }} />
                 AI Analysis
               </h3>
-              <p className="text-sm text-gray-600">Get instant insights, findings & recommendations</p>
-            </Card>
+              <p className="text-sm" style={{ color: "var(--muted)" }}>Get instant insights, findings & recommendations</p>
+            </div>
           </Col>
         </Row>
       </div>

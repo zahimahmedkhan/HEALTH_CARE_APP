@@ -55,7 +55,7 @@ export default function EmailVerificationPending() {
 
         {/* Buttons */}
         <div className="space-y-3">
-          <Link to="/signin" className="block">
+          <Link to="/login" className="block">
             <Button 
               type="primary" 
               size="large" 

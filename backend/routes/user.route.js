@@ -43,15 +43,25 @@ userRoute.post("/logout", logoutUser);
 
 userRoute.get("/user-profile", protectedRoute, userProfile);
 
-userRoute.put("/update-profile", protectedRoute, upload.single('avatar'), (err, req, res, next) => {
-    if (err) {
-        console.error("❌ Multer Error:", err.message);
-        return res.status(400).send({
-            status: 400,
-            message: "File upload error: " + err.message
-        });
+const profileUpload = (req, res, next) => {
+    const contentType = req.headers["content-type"] || "";
+
+    if (!contentType.includes("multipart/form-data")) {
+        return next();
     }
-    next();
-}, updateUserProfile);
+
+    upload.single("avatar")(req, res, (err) => {
+        if (err) {
+            console.error("Profile Multer Error:", err.message);
+            return res.status(400).send({
+                status: 400,
+                message: "File upload error: " + err.message,
+            });
+        }
+        next();
+    });
+};
+
+userRoute.put("/update-profile", protectedRoute, profileUpload, updateUserProfile);
 
 export default userRoute;

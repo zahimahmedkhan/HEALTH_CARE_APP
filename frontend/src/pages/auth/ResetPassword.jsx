@@ -62,7 +62,7 @@ const ResetPassword = () => {
       if (response.data?.status === 200) {
         message.success("Password reset successfully!");
         form.resetFields();
-        setTimeout(() => navigate("/signin"), 2000);
+        setTimeout(() => navigate("/login"), 2000);
       } else {
         message.error(response.data?.message || "Failed to reset password");
       }
@@ -217,7 +217,7 @@ const ResetPassword = () => {
       <p className="text-gray-600">
         Remember your password?{" "}
         <Link
-          to="/signin"
+          to="/login"
           className="text-green-600 hover:text-green-700 font-semibold underline hover:no-underline transition-all"
         >
           Back to Sign In

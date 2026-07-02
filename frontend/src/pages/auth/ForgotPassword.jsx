@@ -131,7 +131,7 @@ const ForgotPassword = () => {
       <p className="text-gray-600">
         Remember your password?{" "}
         <Link
-          to="/signin"
+          to="/login"
           className="text-orange-600 hover:text-orange-700 font-semibold underline hover:no-underline transition-all duration-300"
         >
           Back to Sign In

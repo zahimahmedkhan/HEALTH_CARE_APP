@@ -1,14 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Form, message, Input, Button, Divider, Alert } from "antd";
 import { MailOutlined, LockOutlined, LoginOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import PrimaryButton from "../../components/PrimaryButton";
 
 const SignIn = () => {
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (localStorage.getItem("accessToken")) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
 
   const onFinish = async (values) => {
     try {
@@ -48,111 +55,38 @@ const SignIn = () => {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-1" style={{ color: "#0F4C81" }}>Welcome Back</h2>
-        <p className="text-sm" style={{ color: "#1F2933" }}>Sign in to your health account</p>
+        <h2 className="text-2xl font-bold mb-1" style={{ color: "var(--primary)" }}>Welcome Back</h2>
+        <p className="text-sm" style={{ color: "var(--muted)" }}>Sign in to your health account</p>
       </div>
 
       {errors.general && (
-        <Alert
-          message={errors.general}
-          type="error"
-          showIcon
-          className="mb-4 rounded-lg"
-          style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", borderColor: "rgba(239, 68, 68, 0.2)" }}
-        />
+        <Alert message={errors.general} type="error" showIcon className="mb-4 rounded-lg" />
       )}
 
-      <Form 
-        layout="vertical" 
-        form={form} 
-        onFinish={onFinish}
-        className="space-y-4"
-      >
-        <Form.Item
-          label={<span className="font-semibold" style={{ color: "#1F2933" }}>Email Address</span>}
-          name="email"
-          rules={[
-            { required: true, message: "Please enter your email" },
-            { type: "email", message: "Enter a valid email address" },
-          ]}
-        >
-          <Input
-            type="email"
-            prefix={<MailOutlined style={{ color: "#2EC4B6" }} />}
-            placeholder="you@example.com"
-            size="large"
-            className="rounded-lg"
-            style={{
-              backgroundColor: "#F7F9FC",
-              borderColor: "#2EC4B6",
-              color: "#1F2933"
-            }}
-          />
+      <Form layout="vertical" form={form} onFinish={onFinish} className="space-y-4">
+        <Form.Item label={<span className="font-semibold" style={{ color: "var(--text)" }}>Email Address</span>} name="email" rules={[{ required: true, message: "Please enter your email" }, { type: "email", message: "Enter a valid email address" }]}>
+          <Input type="email" prefix={<MailOutlined style={{ color: "var(--primary)" }} />} placeholder="you@example.com" size="large" className="rounded-lg" style={{ backgroundColor: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }} />
         </Form.Item>
 
-        <Form.Item
-          label={<span className="font-semibold" style={{ color: "#1F2933" }}>Password</span>}
-          name="password"
-          rules={[
-            { required: true, message: "Please enter your password" },
-            { min: 6, message: "Password must be at least 6 characters" },
-          ]}
-        >
-          <Input.Password
-            prefix={<LockOutlined style={{ color: "#2EC4B6" }} />}
-            placeholder="••••••••"
-            size="large"
-            className="rounded-lg"
-            style={{
-              backgroundColor: "#F7F9FC",
-              borderColor: "#2EC4B6",
-              color: "#1F2933"
-            }}
-            iconRender={(visible) => (
-              <span  style={{ color: visible ? "#2EC4B6" : "#1F2933", cursor:"pointer" }}>
-                {visible ? "👁️" : "👁️‍🗨️"}
-              </span>
-            )}
-          />
+        <Form.Item label={<span className="font-semibold" style={{ color: "var(--text)" }}>Password</span>} name="password" rules={[{ required: true, message: "Please enter your password" }, { min: 6, message: "Password must be at least 6 characters" }]}>
+          <Input.Password prefix={<LockOutlined style={{ color: "var(--primary)" }} />} placeholder="••••••••" size="large" className="rounded-lg" style={{ backgroundColor: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }} iconRender={(visible) => (<span style={{ color: visible ? "var(--primary)" : "var(--text)", cursor: "pointer" }}>{visible ? "👁️" : "👁️‍🗨️"}</span>)} />
         </Form.Item>
 
         <div className="flex justify-end">
-          <Link
-            to="/forgot-password"
-            className="text-sm font-medium transition-colors"
-            style={{ color: "#0F4C81" }}
-          >
-            Forgot Password?
-          </Link>
+          <Link to="/forgot-password" className="text-sm font-medium transition-colors" style={{ color: "var(--primary)" }}>Forgot Password?</Link>
         </div>
 
         <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            size="large"
-            loading={isLoading}
-            icon={<LoginOutlined />}
-            className="w-full h-12 border-0 text-base font-bold rounded-lg shadow-lg hover:shadow-xl transition-all"
-            style={{ backgroundImage: "linear-gradient(to right, #0F4C81, #2EC4B6)" }}
-          >
-            {isLoading ? "Signing In..." : "Sign In"}
-          </Button>
+          <PrimaryButton htmlType="submit" isLoading={isLoading} text={isLoading ? "Signing In..." : "Sign In"} />
         </Form.Item>
       </Form>
 
-      <Divider className="my-6" style={{ borderColor: "#E0E7FF" }}>
-        <span style={{ color: "#1F2933" }} className="text-sm">New to HealthPro?</span>
+      <Divider className="my-6" style={{ borderColor: "var(--border)" }}>
+        <span style={{ color: "var(--muted)" }} className="text-sm">New to HealthPro?</span>
       </Divider>
 
-      <Link to="/">
-        <Button
-          size="large"
-          className="w-full h-12 text-base font-bold rounded-lg transition-all"
-          style={{ color: "#0F4C81", borderColor: "#0F4C81" }}
-        >
-          Create an Account
-        </Button>
+      <Link to="/signup">
+        <Button size="large" className="w-full h-12 text-base font-bold rounded-lg transition-all" style={{ color: "var(--primary)", borderColor: "var(--primary)" }}>Create an Account</Button>
       </Link>
     </>
   );

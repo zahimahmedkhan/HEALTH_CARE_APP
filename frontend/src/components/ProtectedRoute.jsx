@@ -10,8 +10,8 @@ const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("accessToken");
 
   if (!token) {
-    // Redirect to signin page, but save the attempted location
-    return <Navigate to="/signin" state={{ from: location }} replace />;
+    // Redirect to login page, but save the attempted location
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return children;
