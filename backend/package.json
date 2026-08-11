@@ -25,5 +25,8 @@
     "nodemailer": "^7.0.9",
     "nodemon": "^3.1.10",
     "pdfjs-dist": "^5.4.296"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true
   }
 }

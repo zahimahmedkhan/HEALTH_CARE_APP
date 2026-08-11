@@ -3,6 +3,9 @@ import "dotenv/config";
 import mongoose from "./db/db.js";
 import mainRoute from "./routes/main.route.js";
 import cors from "cors";
+import dns from "node:dns";
+
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const app = express();
 app.set("trust proxy", 1);
