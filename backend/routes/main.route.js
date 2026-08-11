@@ -1,5 +1,5 @@
 import express from 'express'
-import userRoute from './user.route.js';
+import userRoute, { adminRoute } from './user.route.js';
 import aiRoute from './ai.route.js';
 import vitalRoute from './vital.route.js';
 
@@ -16,6 +16,10 @@ mainRoute.get('/', (req, res) => {
         'POST /api/auth/login',
         'GET /api/auth/user-profile (protected)',
         'PUT /api/auth/update-profile (protected)'
+      ],
+      admin: [
+        'GET /api/admin/pending-verifications (admin only)',
+        'PATCH /api/admin/approve-verification/:userId (admin only)'
       ],
       vitals: [
         'POST /api/vitals (protected)',
@@ -34,6 +38,8 @@ mainRoute.get('/', (req, res) => {
 });
 
 mainRoute.use("/auth", userRoute);
+
+mainRoute.use("/admin", adminRoute);
 
 mainRoute.use("/ai", aiRoute);
 

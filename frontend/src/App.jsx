@@ -15,6 +15,7 @@ import UploadReport from "./pages/Dashboard/UploadReport";
 import TrackVitals from "./pages/Dashboard/TrackVitals";
 import Profile from "./pages/Dashboard/Profile";
 import Reports from "./pages/Dashboard/Reports";
+import NotAuthorized from "./pages/NotAuthorized";
 
 function App() {
   return (
@@ -31,11 +32,12 @@ function App() {
           <Route path="/verify-email/:token" element={<EmailVerification />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/not-authorized" element={<NotAuthorized />} />
         </Route>
 
         {/* Protected Dashboard Routes */}
         <Route element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["patient", "doctor", "lab", "admin"]}>
             <DashboardLayout />
           </ProtectedRoute>
         }>

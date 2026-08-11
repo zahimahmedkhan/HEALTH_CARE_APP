@@ -46,8 +46,30 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ["user", "admin"],
-        default: "user"
+        enum: ["patient", "doctor", "lab", "admin"],
+        default: "patient"
+    },
+    // Migration note: any legacy records with role "user" should be mapped to "patient"
+    // during a one-time data migration. The app treats old "user" accounts as patient accounts.
+    specialization: {
+        type: String,
+        default: null,
+    },
+    licenseNumber: {
+        type: String,
+        default: null,
+    },
+    verified: {
+        type: Boolean,
+        default: false,
+    },
+    labName: {
+        type: String,
+        default: null,
+    },
+    labLicenseNumber: {
+        type: String,
+        default: null,
     }
 }, { timestamps: true });
 

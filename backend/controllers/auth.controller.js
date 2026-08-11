@@ -23,7 +23,16 @@ const registerUser = async (req, res) => {
             });
         }
 
-        const { userName, email, password } = req.body;
+        const {
+            userName,
+            email,
+            password,
+            role,
+            specialization,
+            licenseNumber,
+            labName,
+            labLicenseNumber,
+        } = req.body;
 
         // Validate required fields
         if (!userName || !email || !password) {
@@ -33,8 +42,52 @@ const registerUser = async (req, res) => {
             });
         }
 
-        const avatarBuffer = req.file?.buffer;
+        const allowedRoles = ["patient", "doctor", "lab"];
+        const selectedRole = role || "patient";
 
+        if (selectedRole === "admin") {
+            return res.status(403).send({
+                status: 403,
+                message: "Self-registration as admin is not allowed"
+            });
+        }
+
+        if (!allowedRoles.includes(selectedRole)) {
+            return res.status(400).send({
+                status: 400,
+                message: "Invalid role selected. Allowed roles are patient, doctor, and lab"
+            });
+        }
+
+        if (selectedRole === "doctor" && !specialization) {
+            return res.status(400).send({
+                status: 400,
+                message: "Specialization is required for doctor registration"
+            });
+        }
+
+        if (selectedRole === "doctor" && !licenseNumber) {
+            return res.status(400).send({
+                status: 400,
+                message: "License number is required for doctor registration"
+            });
+        }
+
+        if (selectedRole === "lab" && !labName) {
+            return res.status(400).send({
+                status: 400,
+                message: "Lab name is required for lab registration"
+            });
+        }
+
+        if (selectedRole === "lab" && !labLicenseNumber) {
+            return res.status(400).send({
+                status: 400,
+                message: "Lab license number is required for lab registration"
+            });
+        }
+
+        const avatarBuffer = req.file?.buffer;
 
         const user = await User.findOne({
             $or: [{ email }, { userName }]
@@ -48,7 +101,6 @@ const registerUser = async (req, res) => {
             });
         }
 
-        // Upload avatar to Cloudinary if provided
         let avatarUrl = "";
         if (avatarBuffer) {
             try {
@@ -56,45 +108,55 @@ const registerUser = async (req, res) => {
                 avatarUrl = uploadResult.secure_url || "";
             } catch (uploadError) {
                 console.warn("Avatar upload failed (continuing):", uploadError.message);
-                // Continue without avatar instead of failing
             }
         }
 
-        // Always generates a 6-digit number (000000 - 999999)
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const hashOtp = await bcrypt.hash(otp, 10);
-
-        // Set expiry time (current time + 5 minutes)
         const otpExpiry = generateExpiryTime("5m");
 
-        // Send verification email with better error handling
         try {
             await sendVerificationToEmail(otp, email, userName, req.headers.origin);
         } catch (emailError) {
             console.warn("Failed to send verification email:", emailError.message);
-            // Continue even if email fails - user can still register
         }
 
-        // Create user with all provided data
-        await User.create({ 
-            userName, 
-            email, 
+        const userPayload = {
+            userName,
+            email,
             password,
-            otp: hashOtp, 
-            otpExpiry, 
-            avatar: avatarUrl
-        });
+            otp: hashOtp,
+            otpExpiry,
+            avatar: avatarUrl,
+            role: selectedRole,
+            verified: selectedRole === "doctor" || selectedRole === "lab" ? false : true,
+        };
 
-        res.status(201).send({ 
-            status: 201, 
-            message: "Registration successful. Please check your email to verify your account." 
+        if (selectedRole === "doctor") {
+            userPayload.specialization = specialization;
+            userPayload.licenseNumber = licenseNumber;
+        }
+
+        if (selectedRole === "lab") {
+            userPayload.labName = labName;
+            userPayload.labLicenseNumber = labLicenseNumber;
+        }
+
+        await User.create(userPayload);
+
+        const message = selectedRole === "doctor" || selectedRole === "lab"
+            ? "Registration successful. Your account is pending admin verification."
+            : "Registration successful. Please check your email to verify your account.";
+
+        res.status(201).send({
+            status: 201,
+            message
         });
 
     } catch (error) {
-        console.error("âŒ Registration Error:", error.message);
+        console.error("❌ Registration Error:", error.message);
         console.error("Error Details:", error);
-        
-        // Check if it's a MongoDB duplicate key error
+
         if (error.code === 11000) {
             const field = Object.keys(error.keyPattern)[0];
             return res.status(409).send({
@@ -103,8 +165,8 @@ const registerUser = async (req, res) => {
             });
         }
 
-        res.status(500).send({ 
-            status: 500, 
+        res.status(500).send({
+            status: 500,
             message: "Registration failed: " + error.message
         });
     }
@@ -183,42 +245,88 @@ const loginUser = async (req, res) => {
     try {
         const { email, userName, password } = req.body;
 
-        // Find user by email OR username
         const user = await User.findOne({
             $or: [{ email }, { userName }]
         }).select("+password");
 
-        // 404 â€" Not Found
         if (!user) {
             return sendResponse(res, 404, "User not found")
         }
 
-        // 403 â€" Forbidden (account exists but not verified)
-        // if (!user.isVerified) {
-        //     return sendResponse(res, 403, "Email not verified")
-        // }
-
-        // Compare password (make sure to call the instance method)
         const isValidPass = await user.comparePassword(password);
 
-        // 401 â€" Unauthorized (wrong credentials)
         if (!isValidPass) {
             return sendResponse(res, 401, "Invalid password")
         }
 
-        // Generate tokens
         const accessToken = generateAccessToken("15m", user._id);
         const refreshToken = generateRefreshToken("1h", user._id);
 
         user.refreshToken = refreshToken;
         await user.save();
 
-        // 200 â€" OK 
-        sendResponse(res, 200, "Login successful", { accessToken, refreshToken })
+        const userPayload = {
+            _id: user._id,
+            userName: user.userName,
+            email: user.email,
+            role: user.role,
+            isVerified: user.isVerified,
+            verified: user.verified,
+            avatar: user.avatar,
+            phone: user.phone,
+            dob: user.dob,
+        };
+
+        sendResponse(res, 200, "Login successful", {
+            accessToken,
+            refreshToken,
+            user: userPayload,
+        })
     } catch (error) {
         console.error("Login Error:", error);
-        // 500 â€" Internal Server Error
         sendResponse(res, 500, "Internal server error", { error: error.message })
+    }
+};
+
+const getPendingVerifications = async (req, res) => {
+    try {
+        const pendingUsers = await User.find({
+            role: { $in: ["doctor", "lab"] },
+            verified: false,
+        }).select("-password -refreshToken -otp -otpExpiry");
+
+        return sendResponse(res, 200, "Pending verifications fetched successfully", { users: pendingUsers });
+    } catch (error) {
+        console.error("Get Pending Verifications Error:", error);
+        return sendResponse(res, 500, "Internal server error", { error: error.message });
+    }
+};
+
+const approveVerification = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        if (!userId) {
+            return sendResponse(res, 400, "User ID is required");
+        }
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return sendResponse(res, 404, "User not found");
+        }
+
+        if (!['doctor', 'lab'].includes(user.role)) {
+            return sendResponse(res, 400, "Only doctor and lab accounts can be approved");
+        }
+
+        user.verified = true;
+        await user.save();
+
+        return sendResponse(res, 200, "Verification approved successfully", { user });
+    } catch (error) {
+        console.error("Approve Verification Error:", error);
+        return sendResponse(res, 500, "Internal server error", { error: error.message });
     }
 };
 
@@ -468,4 +576,18 @@ const aiSummery = async (req, res) => {
     }
 }
 
-export { loginUser, registerUser, refreshAccessToken, logoutUser, userNewPassword, verifyEmail, verifyOtp, forgetPassword, userProfile, updateUserProfile, aiSummery }
+export {
+    loginUser,
+    registerUser,
+    refreshAccessToken,
+    logoutUser,
+    getPendingVerifications,
+    approveVerification,
+    userNewPassword,
+    verifyEmail,
+    verifyOtp,
+    forgetPassword,
+    userProfile,
+    updateUserProfile,
+    aiSummery
+}

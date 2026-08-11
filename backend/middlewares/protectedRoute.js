@@ -39,19 +39,30 @@ const protectedRoute = async (req, res, next) => {
     }
 }
 
-const adminRoute = async (req, res, next) => {
-    try {
-        const { user } = req;
+const authorizeRoles = (...roles) => {
+    return (req, res, next) => {
+        try {
+            const { user } = req;
 
-        if (user.role !== "admin") {
-            return res.status(403).send({ status: 403, message: "Forbidden - Admin only" })
+            if (!user) {
+                return res.status(401).send({ status: 401, message: "Unauthorized" })
+            }
+
+            if (!roles.includes(user.role)) {
+                return res.status(403).send({
+                    status: 403,
+                    message: `Forbidden - Allowed roles: ${roles.join(", ")}`
+                })
+            }
+
+            next();
+        } catch (error) {
+            console.error("Authorize Roles Middleware Error:", error.message);
+            res.status(500).send({ status: 500, message: "Internal server error", error: error.message })
         }
-
-        next();
-    } catch (error) {
-        console.error("Admin Middleware Error:", error.message);
-        res.status(500).send({ status: 500, message: "Internal server error", error: error.message })
     }
 }
 
-export { protectedRoute, adminRoute }
+const adminRoute = authorizeRoles("admin");
+
+export { protectedRoute, authorizeRoles, adminRoute }

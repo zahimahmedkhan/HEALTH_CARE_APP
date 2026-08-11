@@ -1,14 +1,28 @@
 import express from 'express'
-import { loginUser, logoutUser, refreshAccessToken, registerUser, forgetPassword, verifyEmail, verifyOtp, userNewPassword, userProfile, updateUserProfile, aiSummery } from '../controllers/auth.controller.js';
-import { protectedRoute } from '../middlewares/protectedRoute.js';
+import {
+    loginUser,
+    logoutUser,
+    refreshAccessToken,
+    registerUser,
+    forgetPassword,
+    verifyEmail,
+    verifyOtp,
+    userNewPassword,
+    userProfile,
+    updateUserProfile,
+    aiSummery,
+    getPendingVerifications,
+    approveVerification,
+} from '../controllers/auth.controller.js';
+import { protectedRoute, authorizeRoles } from '../middlewares/protectedRoute.js';
 import upload from '../config/multer.js'
 
 const userRoute = express.Router();
+const adminRoute = express.Router();
 
 const registerUpload = (req, res, next) => {
     const contentType = req.headers["content-type"] || "";
 
-    // Only run multer for multipart requests
     if (!contentType.includes("multipart/form-data")) {
         return next();
     }
@@ -64,4 +78,8 @@ const profileUpload = (req, res, next) => {
 
 userRoute.put("/update-profile", protectedRoute, profileUpload, updateUserProfile);
 
+adminRoute.get("/pending-verifications", protectedRoute, authorizeRoles("admin"), getPendingVerifications);
+adminRoute.patch("/approve-verification/:userId", protectedRoute, authorizeRoles("admin"), approveVerification);
+
+export { adminRoute };
 export default userRoute;

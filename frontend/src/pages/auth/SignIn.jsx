@@ -2,14 +2,17 @@ import React, { useState, useEffect } from "react";
 import { Form, message, Input, Button, Divider, Alert } from "antd";
 import { MailOutlined, LockOutlined, LoginOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import axios from "axios";
 import PrimaryButton from "../../components/PrimaryButton";
+import { signInSuccess } from "../../redux/user/userSlice";
 
 const SignIn = () => {
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (localStorage.getItem("accessToken")) {
@@ -33,11 +36,21 @@ const SignIn = () => {
       const data = response.data;
 
       if (data?.status === 200 && data?.accessToken) {
-        message.success("✓ Login successful! Redirecting...", 2);
         localStorage.setItem("accessToken", data.accessToken);
         if (data.refreshToken) {
           localStorage.setItem("refreshToken", data.refreshToken);
         }
+
+        const userPayload = data.user || {
+          userName: values.email,
+          email: values.email,
+          role: "patient",
+        };
+
+        localStorage.setItem("user", JSON.stringify(userPayload));
+        dispatch(signInSuccess(userPayload));
+
+        message.success("✓ Login successful! Redirecting...", 2);
         setTimeout(() => navigate("/dashboard"), 500);
       } else {
         message.error(data?.message || "Invalid credentials");

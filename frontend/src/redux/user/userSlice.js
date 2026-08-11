@@ -1,7 +1,19 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const getStoredUser = () => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  } catch (error) {
+    console.warn("Failed to parse stored user:", error);
+    return null;
+  }
+};
+
 const initialState = {
-  currentUser: null,
+  currentUser: getStoredUser(),
   errorDispatch: null,
   loading: false,
 };
@@ -17,6 +29,10 @@ const userSlice = createSlice({
       state.currentUser = action.payload;
       state.loading = false;
       state.errorDispatch = null;
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(action.payload));
+      }
     },
     signInFailure: (state, action) => {
       state.errorDispatch = action.payload;
@@ -29,6 +45,10 @@ const userSlice = createSlice({
       state.currentUser = null;
       state.loading = false;
       state.errorDispatch = null;
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("user");
+      }
     },
     signOutFailure: (state, action) => {
       state.errorDispatch = action.payload;
