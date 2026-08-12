@@ -167,6 +167,27 @@ const getInsightById = async (req, res) => {
     }
 }
 
+const getPatientInsights = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+
+        if (!patientId) {
+            return sendResponse(res, 400, "Patient ID is required");
+        }
+
+        if (!patientId.match(/^[0-9a-fA-F]{24}$/)) {
+            return sendResponse(res, 400, "Invalid patient ID format");
+        }
+
+        const insights = await aiInsightModel.find({ userId: patientId });
+
+        sendResponse(res, 200, "Patient insights retrieved successfully", { insights });
+    } catch (error) {
+        console.error("Get Patient Insights Error:", error.message);
+        sendResponse(res, 500, "Internal server error", { error: error.message });
+    }
+};
+
 const deleteInsight = async (req, res) => {
     try {
         const { id } = req.params;
@@ -198,4 +219,4 @@ const deleteInsight = async (req, res) => {
     }
 }
 
-export { analyzeFile, getAllInsights, getInsightById, deleteInsight }
+export { analyzeFile, getAllInsights, getInsightById, getPatientInsights, deleteInsight }

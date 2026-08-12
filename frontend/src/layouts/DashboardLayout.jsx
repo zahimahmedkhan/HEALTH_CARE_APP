@@ -9,6 +9,8 @@ import {
   FileTextOutlined,
   HeartOutlined,
   CaretDownOutlined,
+  TeamOutlined,
+  SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import { Layout, Menu, Button, Avatar, Dropdown, Drawer, Typography } from "antd";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
@@ -77,6 +79,8 @@ const DashboardLayout = () => {
     },
   ];
 
+  const role = userProfile?.role;
+
   const menuItems = [
     { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
     { key: "/reports", icon: <FileTextOutlined />, label: "My Reports" },
@@ -84,6 +88,14 @@ const DashboardLayout = () => {
     { key: "/vitals", icon: <HeartOutlined />, label: "Track Vitals" },
     { key: "/profile", icon: <UserOutlined />, label: "Profile" },
   ];
+
+  if (role === "patient") {
+    menuItems.splice(1, 0, { key: "/access-requests", icon: <SafetyCertificateOutlined />, label: "Access Requests" });
+  }
+
+  if (role === "doctor") {
+    menuItems.splice(1, 0, { key: "/doctor-patients", icon: <TeamOutlined />, label: "My Patients" });
+  }
 
   const handleToggle = () => {
     if (isMobile) setMobileVisible(true);

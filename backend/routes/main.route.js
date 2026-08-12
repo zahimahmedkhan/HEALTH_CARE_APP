@@ -2,6 +2,7 @@ import express from 'express'
 import userRoute, { adminRoute } from './user.route.js';
 import aiRoute from './ai.route.js';
 import vitalRoute from './vital.route.js';
+import accessRoute from './access.route.js';
 
 const mainRoute = express.Router();
 
@@ -21,15 +22,25 @@ mainRoute.get('/', (req, res) => {
         'GET /api/admin/pending-verifications (admin only)',
         'PATCH /api/admin/approve-verification/:userId (admin only)'
       ],
+      access: [
+        'GET /api/access/search-patient (doctor only)',
+        'POST /api/access/request (doctor only)',
+        'PATCH /api/access/respond (patient only)',
+        'GET /api/access/my-grants (patient only)',
+        'GET /api/access/my-patients (doctor only)',
+        'PATCH /api/access/revoke/:grantId (patient only)'
+      ],
       vitals: [
         'POST /api/vitals (protected)',
         'GET /api/vitals (protected)',
+        'GET /api/vitals/patient/:patientId (doctor only + approved access)',
         'GET /api/vitals/:id (protected)',
         'DELETE /api/vitals/:id (protected)'
       ],
       ai: [
         'POST /api/ai/analyze (protected)',
         'GET /api/ai/insights (protected)',
+        'GET /api/ai/insights/patient/:patientId (doctor only + approved access)',
         'GET /api/ai/insights/:id (protected)',
         'DELETE /api/ai/insights/:id (protected)'
       ]
@@ -40,6 +51,8 @@ mainRoute.get('/', (req, res) => {
 mainRoute.use("/auth", userRoute);
 
 mainRoute.use("/admin", adminRoute);
+
+mainRoute.use("/access", accessRoute);
 
 mainRoute.use("/ai", aiRoute);
 

@@ -91,4 +91,24 @@ const getSingleVital = async (req, res) => {
     }
 }
 
-export { addVital, getAllVitals, getSingleVital, deleteVital }
+const getPatientVitals = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+
+        if (!patientId) {
+            return sendResponse(res, 400, "Patient ID is required");
+        }
+
+        if (!patientId.match(/^[0-9a-fA-F]{24}$/)) {
+            return sendResponse(res, 400, "Invalid patient ID format");
+        }
+
+        const vitals = await vitalSchemModel.find({ userId: patientId });
+
+        sendResponse(res, 200, "Patient vitals retrieved successfully", { vitals });
+    } catch (error) {
+        sendResponse(res, 500, "Internal server error", { error: error.message });
+    }
+};
+
+export { addVital, getAllVitals, getSingleVital, deleteVital, getPatientVitals }
