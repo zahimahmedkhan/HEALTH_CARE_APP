@@ -15,9 +15,7 @@ import UploadReport from "./pages/Dashboard/UploadReport";
 import TrackVitals from "./pages/Dashboard/TrackVitals";
 import Profile from "./pages/Dashboard/Profile";
 import Reports from "./pages/Dashboard/Reports";
-import NotAuthorized from "./pages/NotAuthorized";
-import DoctorPatients from "./pages/Dashboard/DoctorPatients";
-import AccessRequests from "./pages/Dashboard/AccessRequests";
+import AdminVerifications from "./pages/Dashboard/AdminVerifications";
 
 function App() {
   return (
@@ -50,20 +48,13 @@ function App() {
           <Route path="/profile" element={<Profile />} />
         </Route>
 
+        {/* Admin-only routes */}
         <Route element={
-          <ProtectedRoute allowedRoles={["patient"]}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <DashboardLayout />
           </ProtectedRoute>
         }>
-          <Route path="/access-requests" element={<AccessRequests />} />
-        </Route>
-
-        <Route element={
-          <ProtectedRoute allowedRoles={["doctor"]}>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }>
-          <Route path="/doctor-patients" element={<DoctorPatients />} />
+          <Route path="/dashboard/admin-verifications" element={<AdminVerifications />} />
         </Route>
 
         {/* Catch-all redirect */}
