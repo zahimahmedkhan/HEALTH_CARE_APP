@@ -77,6 +77,7 @@ const DashboardLayout = () => {
     },
   ];
 
+  // Build menu items and include admin-only entries when userProfile indicates admin
   const menuItems = [
     { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
     { key: "/reports", icon: <FileTextOutlined />, label: "My Reports" },
@@ -84,6 +85,23 @@ const DashboardLayout = () => {
     { key: "/vitals", icon: <HeartOutlined />, label: "Track Vitals" },
     { key: "/profile", icon: <UserOutlined />, label: "Profile" },
   ];
+
+  // If userProfile contains role info and includes admin, add admin verifications link
+  const isAdmin = (() => {
+    try {
+      if (!userProfile) return false;
+      const role = userProfile.role || userProfile.roles || userProfile?.roleName || null;
+      if (!role) return false;
+      if (Array.isArray(role)) return role.includes("admin");
+      return String(role).toLowerCase() === "admin";
+    } catch (err) {
+      return false;
+    }
+  })();
+
+  if (isAdmin) {
+    menuItems.splice(2, 0, { key: "/dashboard/admin-verifications", icon: <FileTextOutlined />, label: "Verifications" });
+  }
 
   const handleToggle = () => {
     if (isMobile) setMobileVisible(true);

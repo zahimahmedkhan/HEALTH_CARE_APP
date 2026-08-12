@@ -15,6 +15,7 @@ import UploadReport from "./pages/Dashboard/UploadReport";
 import TrackVitals from "./pages/Dashboard/TrackVitals";
 import Profile from "./pages/Dashboard/Profile";
 import Reports from "./pages/Dashboard/Reports";
+import AdminVerifications from "./pages/Dashboard/AdminVerifications";
 
 function App() {
   return (
@@ -44,6 +45,15 @@ function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/vitals" element={<TrackVitals />} />
           <Route path="/profile" element={<Profile />} />
+        </Route>
+
+        {/* Admin-only routes */}
+        <Route element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/dashboard/admin-verifications" element={<AdminVerifications />} />
         </Route>
 
         {/* Catch-all redirect */}
