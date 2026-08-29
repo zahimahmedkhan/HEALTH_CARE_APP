@@ -1,6 +1,7 @@
 import geminiAI from '../config/gemeni.js';
 import aiInsightModel from '../models/aiInsightModel.js';
 import { sendResponse } from '../utils/sendResponse.js'
+import logAudit from '../utils/logAudit.js'
 
 
 
@@ -180,6 +181,9 @@ const getPatientInsights = async (req, res) => {
         }
 
         const insights = await aiInsightModel.find({ userId: patientId });
+
+        // Audit log: doctor viewed patient insights
+        logAudit({ req, action: 'VIEW_PATIENT_INSIGHTS', targetId: patientId, targetType: 'AiInsight' });
 
         sendResponse(res, 200, "Patient insights retrieved successfully", { insights });
     } catch (error) {

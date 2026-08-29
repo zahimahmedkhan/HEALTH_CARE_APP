@@ -11,6 +11,12 @@ import {
   CaretDownOutlined,
   TeamOutlined,
   SafetyCertificateOutlined,
+  UserSwitchOutlined,
+  AlertOutlined,
+  CalendarOutlined,
+  MedicineBoxOutlined,
+  HistoryOutlined,
+  AuditOutlined,
 } from "@ant-design/icons";
 import { Layout, Menu, Button, Avatar, Dropdown, Drawer, Typography } from "antd";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
@@ -88,21 +94,40 @@ const DashboardLayout = () => {
     { key: "/profile", icon: <UserOutlined />, label: "Profile" },
   ];
 
-  // If userProfile contains role info and includes admin, add admin verifications link
-  const isAdmin = (() => {
+  // Helper to extract the user's role string
+  const getUserRole = () => {
     try {
-      if (!userProfile) return false;
+      if (!userProfile) return null;
       const role = userProfile.role || userProfile.roles || userProfile?.roleName || null;
-      if (!role) return false;
-      if (Array.isArray(role)) return role.includes("admin");
-      return String(role).toLowerCase() === "admin";
+      if (!role) return null;
+      if (Array.isArray(role)) return role.map((r) => String(r).toLowerCase());
+      return [String(role).toLowerCase()];
     } catch (err) {
-      return false;
+      return null;
     }
-  })();
+  };
+
+  const roles = getUserRole();
+  const isAdmin = roles?.includes("admin") ?? false;
+  const isDoctor = roles?.includes("doctor") ?? false;
+  const isPatient = roles?.includes("patient") ?? false;
 
   if (isAdmin) {
     menuItems.splice(2, 0, { key: "/dashboard/admin-verifications", icon: <FileTextOutlined />, label: "Verifications" });
+    menuItems.splice(3, 0, { key: "/dashboard/admin-audit-logs", icon: <AuditOutlined />, label: "Audit Logs" });
+  }
+
+  if (isDoctor) {
+    menuItems.splice(2, 0, { key: "/dashboard/doctor-patients", icon: <TeamOutlined />, label: "My Patients" });
+    menuItems.splice(3, 0, { key: "/dashboard/appointments", icon: <CalendarOutlined />, label: "Appointments" });
+  }
+
+  if (isPatient) {
+    menuItems.splice(2, 0, { key: "/dashboard/access-requests", icon: <UserSwitchOutlined />, label: "Access Requests" });
+    menuItems.splice(3, 0, { key: "/dashboard/emergency-profile", icon: <AlertOutlined />, label: "Emergency Profile" });
+    menuItems.splice(4, 0, { key: "/dashboard/appointments", icon: <CalendarOutlined />, label: "Appointments" });
+    menuItems.splice(5, 0, { key: "/dashboard/medications", icon: <MedicineBoxOutlined />, label: "Medications" });
+    menuItems.splice(6, 0, { key: "/dashboard/access-history", icon: <HistoryOutlined />, label: "Access History" });
   }
 
   const handleToggle = () => {

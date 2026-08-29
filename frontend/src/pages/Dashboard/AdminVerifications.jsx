@@ -12,7 +12,7 @@ const AdminVerifications = () => {
     try {
       setLoading(true);
       // Backend endpoint for pending verifications
-      const res = await api.get("/admin/verifications/pending", { signal });
+      const res = await api.get("/admin/pending-verifications", { signal });
       if (res?.data?.verifications) {
         setItems(res.data.verifications);
       } else if (Array.isArray(res?.data)) {
@@ -39,7 +39,7 @@ const AdminVerifications = () => {
   const handleApprove = async (id) => {
     try {
       setApproving(id);
-      const res = await api.post(`/admin/verifications/${id}/approve`);
+      const res = await api.patch(`/admin/approve-verification/${id}`);
       if (res?.data?.status === 200 || res?.status === 200) {
         message.success(res.data?.message || "Verified successfully");
         setItems((prev) => prev.filter((i) => i._id !== id && i.id !== id));

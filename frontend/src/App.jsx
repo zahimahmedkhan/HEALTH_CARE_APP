@@ -16,6 +16,15 @@ import TrackVitals from "./pages/Dashboard/TrackVitals";
 import Profile from "./pages/Dashboard/Profile";
 import Reports from "./pages/Dashboard/Reports";
 import AdminVerifications from "./pages/Dashboard/AdminVerifications";
+import DoctorPatients from "./pages/Dashboard/DoctorPatients";
+import AccessRequests from "./pages/Dashboard/AccessRequests";
+import EmergencyProfile from "./pages/Dashboard/EmergencyProfile";
+import EmergencyView from "./pages/EmergencyView";
+import Appointments from "./pages/Dashboard/Appointments";
+import Medications from "./pages/Dashboard/Medications";
+import AccessHistory from "./pages/Dashboard/AccessHistory";
+import AdminAuditLogs from "./pages/Dashboard/AdminAuditLogs";
+import NotAuthorized from './pages/NotAuthorized';
 
 function App() {
   return (
@@ -55,7 +64,41 @@ function App() {
           </ProtectedRoute>
         }>
           <Route path="/dashboard/admin-verifications" element={<AdminVerifications />} />
+          <Route path="/dashboard/admin-audit-logs" element={<AdminAuditLogs />} />
         </Route>
+
+        {/* Patient & Doctor routes (appointments) */}
+        <Route element={
+          <ProtectedRoute allowedRoles={["patient", "doctor"]}>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/dashboard/appointments" element={<Appointments />} />
+        </Route>
+
+        {/* Doctor-only routes */}
+        <Route element={
+          <ProtectedRoute allowedRoles={["doctor"]}>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/dashboard/doctor-patients" element={<DoctorPatients />} />
+        </Route>
+
+        {/* Patient-only routes */}
+        <Route element={
+          <ProtectedRoute allowedRoles={["patient"]}>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/dashboard/access-requests" element={<AccessRequests />} />
+          <Route path="/dashboard/emergency-profile" element={<EmergencyProfile />} />
+          <Route path="/dashboard/medications" element={<Medications />} />
+          <Route path="/dashboard/access-history" element={<AccessHistory />} />
+        </Route>
+
+        {/* Public routes - no auth required */}
+        <Route path="/emergency/:userId" element={<EmergencyView />} />
 
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />

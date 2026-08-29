@@ -6,21 +6,23 @@ import verificationFailedImg from "./../../assets/images/verification-failed.gif
 import api from "../../utils/axiosSetup";
 
 const EmailVerification = () => {
-  const { token } = useParams();
+  const { email } = useParams();
   const [isVerified, setIsVerified] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [otp, setOtp] = useState("");
   const navigate = useNavigate();
 
   const verifyEmail = useCallback(async (signal) => {
-    if (!token) {
-      setErrorMessage("No verification token provided");
+    if (!email) {
+      setErrorMessage("No email provided");
       setIsVerified(false);
       return;
     }
     
     try {
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_API_URL}/auth/verify-email/${token}`,
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/verify-email/${email}`,
+        { otp },
         { signal }
       );
       if (data.success || data.status === 200) {
@@ -33,11 +35,11 @@ const EmailVerification = () => {
       if (error.name === 'CanceledError') return;
       
       console.error("Verification error:", error);
-      const message = error.response?.data?.message || "Verification failed. The link may have expired.";
+      const message = error.response?.data?.message || "Verification failed. The OTP may have expired.";
       setErrorMessage(message);
       setIsVerified(false);
     }
-  }, [token]);
+  }, [email, otp]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -99,15 +101,25 @@ const EmailVerification = () => {
       <p className="text-gray-500 mb-2 text-lg">We couldn't verify your email address</p>
       <p className="text-red-600 mb-8 text-sm font-medium">{errorMessage}</p>
       
-      <Link 
-        to="/" 
-        className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Enter OTP sent to your email
+        </label>
+        <input
+          type="text"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          value={otp}
+          onChange={(e) => setOtp(e.target.value)}
+          placeholder="123456"
+        />
+      </div>
+      
+      <button
+        onClick={verifyEmail}
+        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-        <span>Return Home</span>
-      </Link>
+        Verify OTP
+      </button>
       
       {/* Additional Help Text */}
       <p className="text-gray-400 text-sm mt-6">

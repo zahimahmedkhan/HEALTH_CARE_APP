@@ -18,7 +18,7 @@ export default function EmailVerificationPending() {
         </h1>
         
         <p className="text-center text-gray-600 mb-6 text-lg leading-relaxed">
-          We've sent a verification link to your email address. Please click the link to verify your account and complete the registration process.
+          We've sent an OTP code to your email address. Please enter the code below to verify your account and complete the registration process.
         </p>
 
         {/* Steps */}
@@ -31,13 +31,13 @@ export default function EmailVerificationPending() {
               <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                 1
               </span>
-              <span>Check your email inbox</span>
+              <span>Check your email inbox for OTP</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                 2
               </span>
-              <span>Click the verification link</span>
+              <span>Enter the OTP code</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">

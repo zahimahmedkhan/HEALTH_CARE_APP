@@ -1,5 +1,6 @@
 import { sendResponse } from '../utils/sendResponse.js'
 import vitalSchemModel from '../models/vitalsSchema.js'
+import logAudit from '../utils/logAudit.js'
 
 const addVital = async (req, res) => {
     try {
@@ -104,6 +105,9 @@ const getPatientVitals = async (req, res) => {
         }
 
         const vitals = await vitalSchemModel.find({ userId: patientId });
+
+        // Audit log: doctor viewed patient vitals
+        logAudit({ req, action: 'VIEW_PATIENT_VITALS', targetId: patientId, targetType: 'Vital' });
 
         sendResponse(res, 200, "Patient vitals retrieved successfully", { vitals });
     } catch (error) {

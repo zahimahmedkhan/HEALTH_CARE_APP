@@ -1,6 +1,7 @@
 import User from '../models/userModel.js';
 import AccessGrant from '../models/accessGrantModel.js';
 import { sendResponse } from '../utils/sendResponse.js';
+import logAudit from '../utils/logAudit.js';
 
 const normalizeScope = (scope) => {
     const allowedScopes = ['vitals', 'reports'];
@@ -91,6 +92,9 @@ const requestAccess = async (req, res) => {
             status: 'pending',
         });
 
+        // Audit log: access request sent
+        logAudit({ req, action: 'ACCESS_REQUEST_SENT', targetId: patient._id, targetType: 'AccessGrant' });
+
         sendResponse(res, 201, 'Access request sent successfully', { grant: newGrant });
     } catch (error) {
         console.error('Request Access Error:', error.message);
@@ -141,6 +145,14 @@ const respondToAccessRequest = async (req, res) => {
         const finalMessage = decision === 'approve'
             ? 'Access request approved successfully'
             : 'Access request denied successfully';
+
+        // Audit log: access request responded
+        logAudit({
+            req,
+            action: decision === 'approve' ? 'ACCESS_REQUEST_APPROVED' : 'ACCESS_REQUEST_DENIED',
+            targetId: grant.doctorId,
+            targetType: 'AccessGrant',
+        });
 
         sendResponse(res, 200, finalMessage, { grant });
     } catch (error) {
@@ -216,6 +228,9 @@ const revokeAccess = async (req, res) => {
         grant.status = 'revoked';
         grant.revokedAt = new Date();
         await grant.save();
+
+        // Audit log: access revoked
+        logAudit({ req, action: 'ACCESS_REVOKED', targetId: grant.doctorId, targetType: 'AccessGrant' });
 
         sendResponse(res, 200, 'Access revoked successfully', { grant });
     } catch (error) {

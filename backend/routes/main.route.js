@@ -3,6 +3,10 @@ import userRoute, { adminRoute } from './user.route.js';
 import aiRoute from './ai.route.js';
 import vitalRoute from './vital.route.js';
 import accessRoute from './access.route.js';
+import emergencyProfileRoute from './emergencyProfile.route.js';
+import appointmentRoute from './appointment.route.js';
+import medicationReminderRoute from './medicationReminder.route.js';
+import auditLogRoute from './auditLog.route.js';
 
 const mainRoute = express.Router();
 
@@ -43,6 +47,26 @@ mainRoute.get('/', (req, res) => {
         'GET /api/ai/insights/patient/:patientId (doctor only + approved access)',
         'GET /api/ai/insights/:id (protected)',
         'DELETE /api/ai/insights/:id (protected)'
+      ],
+      emergency: [
+        'PUT /api/emergency (patient only) - create/update emergency profile',
+        'GET /api/emergency/me (patient only) - get own emergency profile',
+        'GET /api/emergency/public/:userId (public) - view emergency profile'
+      ],
+      appointments: [
+        'POST /api/appointments (patient only) - book appointment',
+        'GET /api/appointments/my (patient/doctor) - get my appointments',
+        'PATCH /api/appointments/:appointmentId/status (patient/doctor) - update status'
+      ],
+      medications: [
+        'POST /api/medications (patient only) - add medication reminder',
+        'GET /api/medications (patient only) - get my reminders',
+        'PATCH /api/medications/:id (patient only) - update reminder',
+        'DELETE /api/medications/:id (patient only) - delete reminder'
+      ],
+      audit: [
+        'GET /api/audit/my-history (patient only) - view my access history',
+        'GET /api/audit/all (admin only) - view all audit logs'
       ]
     }
   });
@@ -57,5 +81,13 @@ mainRoute.use("/access", accessRoute);
 mainRoute.use("/ai", aiRoute);
 
 mainRoute.use("/vitals", vitalRoute);
+
+mainRoute.use("/emergency", emergencyProfileRoute);
+
+mainRoute.use("/appointments", appointmentRoute);
+
+mainRoute.use("/medications", medicationReminderRoute);
+
+mainRoute.use("/audit", auditLogRoute);
 
 export default mainRoute;

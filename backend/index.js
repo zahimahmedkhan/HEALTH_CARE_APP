@@ -4,12 +4,13 @@ import mongoose from "./db/db.js";
 import mainRoute from "./routes/main.route.js";
 import cors from "cors";
 import dns from "node:dns";
+import { startCronJobs } from "./utils/cronReminders.js";
 
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const app = express();
 app.set("trust proxy", 1);
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5000 || 3000;
 const FrontEnd_Url = process.env.FRONTEND_URL;
 const FrontEnd_Urls = process.env.FRONTEND_URLS;
 
@@ -107,6 +108,11 @@ app.get("/", (req, res) => {
 
 // API Routes
 app.use("/api", mainRoute);
+
+// Start cron jobs for medication and appointment reminders
+if (process.env.NODE_ENV !== "production") {
+  startCronJobs();
+}
 
 // 404 Handler - Fixed (no wildcard)
 app.use((req, res) => {

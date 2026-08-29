@@ -41,7 +41,7 @@ const registerUpload = (req, res, next) => {
 
 userRoute.post("/register", registerUpload, registerUser);
 
-userRoute.get("/verify-email/:token", verifyEmail);
+userRoute.post("/verify-email/:email", verifyEmail);
 
 userRoute.post("/login", loginUser);
 

@@ -10,6 +10,7 @@ import { uploadFileToCloudinary } from "../utils/uploadToCloudniary.js";
 import { ensureDbConnection } from "../db/db.js";
 // Note: AISummery is used in aiSummery function below
 import { AISummery } from "../utils/aiSummery.js";
+import logAudit from "../utils/logAudit.js";
 
 const registerUser = async (req, res) => {
     try {
@@ -142,11 +143,14 @@ const registerUser = async (req, res) => {
             userPayload.labLicenseNumber = labLicenseNumber;
         }
 
-        await User.create(userPayload);
+        const newUser = await User.create(userPayload);
 
         const message = selectedRole === "doctor" || selectedRole === "lab"
             ? "Registration successful. Your account is pending admin verification."
             : "Registration successful. Please check your email to verify your account.";
+
+        // Audit log: registration
+        logAudit({ req, action: 'REGISTER', targetId: newUser._id, targetType: 'User', actorId: newUser._id, actorRole: newUser.role });
 
         res.status(201).send({
             status: 201,
@@ -174,38 +178,12 @@ const registerUser = async (req, res) => {
 
 const verifyEmail = async (req, res) => {
   try {
-    const { token } = req.params;
+    const { otp } = req.body;
+    const email = req.params.email;
 
-    if (!token) {
-      return res.status(400).send({ status: 400, success: false, message: "Verification token is required" });
+    if (!otp) {
+      return res.status(400).send({ status: 400, success: false, message: "OTP is required" });
     }
-
-    const jwtSecret =
-      process.env.JWT_EMAIL_SECRET ||
-      process.env.JWT_SECRET ||
-      process.env.JWT_ACCESS_SECRET;
-
-    if (!jwtSecret) {
-      return res.status(500).send({
-        status: 500,
-        success: false,
-        message:
-          "Server misconfigured: missing JWT secret for email verification. Set JWT_EMAIL_SECRET (recommended) or JWT_SECRET (legacy) or JWT_ACCESS_SECRET.",
-      });
-    }
-
-    // Verify JWT token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, jwtSecret);
-    } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        return res.status(400).send({ status: 400, success: false, message: "Verification token has expired. Please sign up again." });
-      }
-      return res.status(400).send({ status: 400, success: false, message: "Invalid verification token" });
-    }
-
-    const { email, otp } = decoded;
 
     const user = await User.findOne({ email });
 
@@ -218,14 +196,14 @@ const verifyEmail = async (req, res) => {
     }
 
     // Verify OTP
-    const isValidOtp = await bcrypt.compare(otp, user.otp);
+    const isValidOtp = await user.compareOtp(otp);
     if (!isValidOtp) {
-      return res.status(400).send({ status: 400, success: false, message: "Invalid verification token" });
+      return res.status(400).send({ status: 400, success: false, message: "Invalid OTP" });
     }
 
     // Check OTP expiry
     if (user.otpExpiry < new Date()) {
-      return res.status(400).send({ status: 400, success: false, message: "Verification token has expired" });
+      return res.status(400).send({ status: 400, success: false, message: "OTP has expired" });
     }
 
     // Mark user as verified
@@ -236,7 +214,7 @@ const verifyEmail = async (req, res) => {
 
     return res.status(200).send({ status: 200, success: true, message: "Email verified successfully" });
   } catch (error) {
-    console.error("âŒ Verify Email Error:", error);
+    console.error("Verify Email Error:", error);
     return res.status(500).send({ status: 500, success: false, message: "Internal server error" });
   }
 };
@@ -276,6 +254,9 @@ const loginUser = async (req, res) => {
             phone: user.phone,
             dob: user.dob,
         };
+
+        // Audit log: login
+        logAudit({ req, action: 'LOGIN', targetId: user._id, targetType: 'User', actorId: user._id, actorRole: user.role });
 
         sendResponse(res, 200, "Login successful", {
             accessToken,
